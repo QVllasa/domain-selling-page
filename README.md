@@ -1,319 +1,132 @@
-# Domain Selling Page
+# 🏷️ Domain Selling Page
 
-A modern, responsive Next.js 15 application for selling domains with a beautiful UI built using shadcn/ui and Tailwind CSS. The application allows visitors to learn about domain selling opportunities and contact the owner with offers.
+A modern, professional Next.js 15 application for selling premium domains with automated email confirmations, spam protection, and a beautiful responsive interface.
 
-## 🚀 Features
+![Domain Selling Page](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC) ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
 
-- **Modern UI**: Built with shadcn/ui components and Tailwind CSS
-- **Responsive Design**: Optimized for mobile and desktop devices
-- **Next.js 15**: Latest version with App Router
-- **Email Integration**: Contact form with email service integration (SendGrid, Brevo, etc.)
-- **Docker Ready**: Containerized for easy deployment anywhere
-- **Environment Configurable**: Domain name, price, and payment options via environment variables
-- **TypeScript**: Full type safety
-- **MIT Licensed**: Open source and free to use
+## ✨ Features
+
+- **🎨 Modern UI**: shadcn/ui components with Tailwind CSS
+- **📱 Responsive Design**: Mobile, tablet, and desktop optimized  
+- **🔒 Spam Protection**: Cloudflare Turnstile integration
+- **📧 Dual Email System**: Owner notifications + buyer confirmations via Brevo
+- **🌍 Internationalization**: German and English support
+- **🐳 Docker Ready**: Production deployment with Coolify/Docker
+- **💳 Payment Options**: Bank Transfer and PayPal with icons
+- **🛡️ TypeScript**: Full type safety and Next.js 15 App Router
 
 ## 📋 Prerequisites
 
-- Node.js 18 or later
-- npm, yarn, or pnpm
-- Docker (optional, for containerized deployment)
+- Node.js 18.18+ (20+ recommended) | npm/yarn/pnpm
+- Brevo account (email service) | Cloudflare account (Turnstile spam protection)
+- Docker (optional, for deployment)
 
-## 🛠️ Installation
+## 🚀 Quick Start
 
-### Local Development
+```bash
+# 1. Clone and Install
+git clone https://github.com/QVllasa/domain-selling-page.git
+cd domain-selling-page
+npm install
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd domain-selling-page
-   ```
+# 2. Configure Environment
+cp .env.example .env.local
+# Edit .env.local with your configuration (see Environment Variables section below)
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. **Configure your environment variables** (see Configuration section below)
-
-5. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-
-6. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-### Docker Deployment
-
-1. **Build the Docker image**
-   ```bash
-   docker build -t domain-selling-page .
-   ```
-
-2. **Run with Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Or run with Docker directly**
-   ```bash
-   docker run -p 3000:3000 --env-file .env.local domain-selling-page
-   ```
-
-## ⚙️ Configuration
-
-Create a `.env.local` file in the root directory with the following variables:
-
-```env
-# Domain Information
-DOMAIN_NAME=example.com
-DOMAIN_PRICE=5000
-DOMAIN_CURRENCY=USD
-
-# Payment Options (comma-separated)
-PAYMENT_OPTIONS=Bank Transfer,PayPal,Cryptocurrency,Escrow Service
-
-# Email Configuration (Choose one service)
-
-# SendGrid
-EMAIL_SERVICE=sendgrid
-SENDGRID_API_KEY=your_sendgrid_api_key_here
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-
-# Brevo (formerly Sendinblue)
-# EMAIL_SERVICE=brevo
-# BREVO_API_KEY=your_brevo_api_key_here
-# BREVO_FROM_EMAIL=noreply@yourdomain.com
-
-# Generic SMTP
-# EMAIL_SERVICE=smtp
-# SMTP_HOST=smtp.gmail.com
-# SMTP_PORT=587
-# SMTP_USER=your_email@gmail.com
-# SMTP_PASS=your_app_password
-# SMTP_FROM=your_email@gmail.com
-
-# Contact Information
-CONTACT_EMAIL=contact@yourdomain.com
-
-# Optional: Additional customization
-DOMAIN_DESCRIPTION=A premium domain perfect for your business
-COMPANY_NAME=Your Company Name
+# 3. Development
+npm run dev
+# Visit http://localhost:3000
 ```
 
-### Environment Variables Explained
+## 🔧 Service Setup
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `DOMAIN_NAME` | The domain name being sold | ✅ | `example.com` |
-| `DOMAIN_PRICE` | Price of the domain | ✅ | `5000` |
-| `DOMAIN_CURRENCY` | Currency for the price | ✅ | `USD` |
-| `PAYMENT_OPTIONS` | Accepted payment methods | ✅ | `Bank Transfer,PayPal` |
-| `EMAIL_SERVICE` | Email service provider | ✅ | `sendgrid` |
-| `CONTACT_EMAIL` | Email to receive inquiries | ✅ | `contact@domain.com` |
-| `DOMAIN_DESCRIPTION` | Description of the domain | ❌ | `Premium domain...` |
-| `COMPANY_NAME` | Your company name | ❌ | `Domain Sales Inc` |
+### Brevo Email Service
+1. Sign up at [brevo.com](https://brevo.com) → SMTP & API → Create API key
+2. Verify your sender email address in Brevo console
 
-## 📧 Email Service Setup
+### Cloudflare Turnstile
+1. Sign up at [cloudflare.com](https://cloudflare.com) → Security → Turnstile
+2. Add your domain → Get Site Key (public) and Secret Key (private)
 
-### SendGrid Setup
+> **Note**: Turnstile is automatically disabled for localhost development
 
-1. Sign up at [SendGrid](https://sendgrid.com/)
-2. Create an API key with "Mail Send" permissions
-3. Verify your sender email address
-4. Add your API key to `.env.local`:
-   ```env
-   EMAIL_SERVICE=sendgrid
-   SENDGRID_API_KEY=SG.your_api_key_here
-   SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-   ```
+## 🐳 Deployment
 
-### Brevo (Sendinblue) Setup
+### Local Docker
+```bash
+docker build -t domain-selling-page .
+docker run -p 3000:3000 --env-file .env.production domain-selling-page
+```
 
-1. Sign up at [Brevo](https://www.brevo.com/)
-2. Go to SMTP & API settings
-3. Create a new API key
-4. Add your API key to `.env.local`:
-   ```env
-   EMAIL_SERVICE=brevo
-   BREVO_API_KEY=your_api_key_here
-   BREVO_FROM_EMAIL=noreply@yourdomain.com
-   ```
+### Docker Compose
+```bash
+docker-compose up -d
+```
 
-### SMTP Setup (Gmail, Outlook, etc.)
+### Coolify (Recommended)
+1. Connect your GitHub repository to Coolify
+2. Add environment variables in Coolify interface (see table below)
+3. Deploy automatically
 
-1. Enable 2-factor authentication on your email account
-2. Generate an app-specific password
-3. Configure SMTP settings:
-   ```env
-   EMAIL_SERVICE=smtp
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your_email@gmail.com
-   SMTP_PASS=your_app_password
-   SMTP_FROM=your_email@gmail.com
-   ```
+## 🌍 Environment Variables
 
-## 🚀 Deployment Options
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_DOMAIN_NAME` | Domain for sale | `example.com` |
+| `NEXT_PUBLIC_DOMAIN_PRICE` | Price (number only) | `10000` |
+| `NEXT_PUBLIC_CURRENCY` | Currency code | `EUR` |
+| `NEXT_PUBLIC_PAYMENT_OPTIONS` | Payment methods | `Bank Transfer,PayPal` |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Your contact email | `contact@example.com` |
+| `NEXT_PUBLIC_SITE_URL` | Full site URL | `https://example.com` |
+| `NEXT_PUBLIC_COMPANY_NAME` | Company/owner name | `Your Company` |
+| `BREVO_API_KEY` | Brevo API key | `xkeysib-...` |
+| `BREVO_SENDER_EMAIL` | Verified sender email | `noreply@example.com` |
+| `BREVO_SENDER_NAME` | Sender display name | `Domain Sales` |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile public key | `0x4AAA...` |
+| `TURNSTILE_SECRET_KEY` | Turnstile private key | `0x4AAA...` |
 
-### Vercel (Recommended)
+## 🎨 Customization
 
-1. Push your code to GitHub/GitLab
-2. Connect your repository to [Vercel](https://vercel.com)
-3. Add environment variables in Vercel dashboard
-4. Deploy automatically
+- **Styling**: Modify `src/components/` and `tailwind.config.js`
+- **Content**: Update `messages/de.json` and `messages/en.json`
+- **Payment Options**: Change `NEXT_PUBLIC_PAYMENT_OPTIONS` environment variable
+- **Languages**: Add new JSON files in `messages/` folder
 
-### Docker on any VPS
+## 🛠️ Development Scripts
 
-1. **Build and push to registry**
-   ```bash
-   docker build -t your-registry/domain-selling-page .
-   docker push your-registry/domain-selling-page
-   ```
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run start        # Production server
+npm run lint         # ESLint
+npm run type-check   # TypeScript validation
+```
 
-2. **Deploy on your server**
-   ```bash
-   docker pull your-registry/domain-selling-page
-   docker run -d -p 3000:3000 --env-file .env.local your-registry/domain-selling-page
-   ```
-
-### Railway
-
-1. Connect your GitHub repository to [Railway](https://railway.app)
-2. Add environment variables
-3. Deploy with one click
-
-### DigitalOcean App Platform
-
-1. Create a new app from your GitHub repository
-2. Configure environment variables
-3. Deploy
-
-## 🛠️ Development
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 src/
 ├── app/
-│   ├── api/
-│   │   ├── contact/
-│   │   │   └── route.ts          # Contact form API endpoint
-│   │   └── health/
-│   │       └── route.ts          # Health check endpoint
-│   ├── globals.css               # Global styles
-│   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Main landing page
-├── components/
-│   └── ui/                       # shadcn/ui components
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── input.tsx
-│       ├── label.tsx
-│       └── textarea.tsx
-└── lib/
-    └── utils.ts                  # Utility functions
+│   ├── api/           # Contact & health check endpoints
+│   └── [locale]/      # Internationalized pages
+├── components/        # React components (DomainSaleClient, UI)
+├── i18n/             # Internationalization config
+└── lib/              # Utility functions
+messages/             # Translation files (de.json, en.json)
 ```
 
-### Available Scripts
+## 🚨 Troubleshooting
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+**Email not working**: Verify Brevo API key and sender email verification  
+**Turnstile errors**: Check site key/domain configuration in Cloudflare  
+**Build issues**: Ensure Node.js 18.18+, clear node_modules, run `npm run type-check`  
+**Docker problems**: Check environment variables and review logs with `docker logs`
 
-### Adding New Email Services
+## 🔍 API Endpoints
 
-To add support for a new email service:
-
-1. Update the contact API route (`src/app/api/contact/route.ts`)
-2. Add the new service configuration
-3. Update environment variable documentation
-
-## 🎨 Customization
-
-### Styling
-
-The application uses Tailwind CSS for styling. You can customize:
-
-- Colors in `tailwind.config.js`
-- Components in `src/components/ui/`
-- Global styles in `src/app/globals.css`
-
-### Content
-
-Update the main page content in `src/app/page.tsx`:
-
-- Hero section text
-- Features list
-- Call-to-action buttons
-- Contact form fields
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Email not sending**
-   - Check your API keys are correct
-   - Verify sender email is authenticated
-   - Check spam folder
-
-2. **Docker build fails**
-   - Ensure Node.js version compatibility
-   - Check all environment variables are set
-
-3. **Styling issues**
-   - Clear Next.js cache: `rm -rf .next`
-   - Rebuild: `npm run build`
-
-### Health Check
-
-Visit `/api/health` to check if the application is running correctly.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📞 Support
-
-If you need help with this application:
-
-1. Check the troubleshooting section
-2. Review environment variable configuration
-3. Open an issue on GitHub
-
-## 🔄 Updates
-
-To update to the latest Next.js version:
-
-```bash
-npm update next react react-dom
-```
-
-The application is configured to use `"next": "latest"` for automatic updates.
+- `POST /api/contact` - Form submissions with Turnstile verification
+- `GET /api/health` - Health check for monitoring
 
 ---
 
-**Happy domain selling! 🚀**
+**Made with ❤️ using Next.js 15, TypeScript, and Tailwind CSS**
