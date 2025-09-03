@@ -1,9 +1,105 @@
 import { NextResponse } from 'next/server';
 
+// Verify Turnstile token
+async function verifyTurnstile(token: string): Promise<boolean> {
+  if (!process.env.TURNSTILE_SECRET_KEY) {
+    console.warn('Turnstile secret key not configured');
+    return true; // Allow without verification if not configured
+  }
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `secret=${process.env.TURNSTILE_SECRET_KEY}&response=${token}`,
+    });
+
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error('Turnstile verification error:', error);
+    return false;
+  }
+}
+
+// Send confirmation email to the sender
+async function sendConfirmationEmail(email: string, name: string, locale: string, domainName: string) {
+  const isGerman = locale === 'de';
+  
+  const subject = isGerman 
+    ? `Bestätigung: Ihr Angebot für ${domainName} wurde erhalten`
+    : `Confirmation: Your offer for ${domainName} has been received`;
+  
+  const emailBody = isGerman ? `
+    Hallo ${name},
+
+    vielen Dank für Ihr Interesse an der Domain ${domainName}.
+
+    Wir haben Ihr Angebot erfolgreich erhalten und werden es sorgfältig prüfen. 
+    Unser Team wird sich innerhalb von 24 Stunden bei Ihnen melden.
+
+    Falls Sie in der Zwischenzeit Fragen haben, können Sie gerne auf diese E-Mail antworten.
+
+    Mit freundlichen Grüßen
+    Das ${domainName} Team
+
+    ---
+    Diese E-Mail wurde automatisch generiert.
+  ` : `
+    Hello ${name},
+
+    Thank you for your interest in the domain ${domainName}.
+
+    We have successfully received your offer and will review it carefully.
+    Our team will get back to you within 24 hours.
+
+    If you have any questions in the meantime, feel free to reply to this email.
+
+    Best regards,
+    The ${domainName} Team
+
+    ---
+    This email was automatically generated.
+  `;
+
+  // Try Brevo first (since we have the credentials)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: {
+            name: process.env.BREVO_SENDER_NAME || 'Domain Sales',
+            email: process.env.BREVO_SENDER_EMAIL || 'noreply@yourdomain.com',
+          },
+          to: [{ email: email, name: name }],
+          subject: subject,
+          textContent: emailBody,
+        }),
+      });
+
+      if (response.ok) {
+        return true;
+      }
+    } catch (error) {
+      console.error('Brevo confirmation email error:', error);
+    }
+  }
+
+  return false;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, phone, offer, message, locale = 'en' } = body;
+    const { name, email, phone, offer, message, locale = 'en', turnstileToken } = body;
 
     // Basic validation
     if (!name || !email || !offer) {
@@ -13,10 +109,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const domainName = process.env.NEXT_PUBLIC_DOMAIN_NAME || 'yourdomain.com';
-    const contactEmail = process.env.CONTACT_EMAIL || 'contact@yourdomain.com';
+    // Verify Turnstile token
+    if (!turnstileToken) {
+      return NextResponse.json(
+        { error: 'Please complete the spam protection challenge' },
+        { status: 400 }
+      );
+    }
 
-    // Prepare email content based on locale
+    const turnstileValid = await verifyTurnstile(turnstileToken);
+    if (!turnstileValid) {
+      return NextResponse.json(
+        { error: 'Spam protection verification failed' },
+        { status: 400 }
+      );
+    }
+
+    const domainName = process.env.NEXT_PUBLIC_DOMAIN_NAME || 'yourdomain.com';
+    const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@yourdomain.com';
+
+    // Prepare email content for owner notification
     const isGerman = locale === 'de';
     const subject = isGerman 
       ? `Neues Angebot für ${domainName}` 
@@ -50,52 +162,9 @@ export async function POST(request: Request) {
       This email was automatically generated from the domain sales page.
     `;
 
-    // Choose email service based on available environment variables
-    let emailSent = false;
-
-    // Try SendGrid
-    if (process.env.SENDGRID_API_KEY) {
-      try {
-        const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            personalizations: [
-              {
-                to: [{ email: contactEmail }],
-                subject: subject,
-              },
-            ],
-            from: {
-              email: process.env.SENDGRID_FROM_EMAIL || 'noreply@yourdomain.com',
-              name: 'Domain Sales',
-            },
-            reply_to: {
-              email: email,
-              name: name,
-            },
-            content: [
-              {
-                type: 'text/plain',
-                value: emailBody,
-              },
-            ],
-          }),
-        });
-
-        if (response.ok) {
-          emailSent = true;
-        }
-      } catch (error) {
-        console.error('SendGrid error:', error);
-      }
-    }
-
-    // Try Brevo if SendGrid failed
-    if (!emailSent && process.env.BREVO_API_KEY) {
+    // Send notification to domain owner
+    let ownerEmailSent = false;
+    if (process.env.BREVO_API_KEY) {
       try {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
@@ -106,8 +175,8 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify({
             sender: {
-              name: 'Domain Sales',
-              email: process.env.BREVO_FROM_EMAIL || 'noreply@yourdomain.com',
+              name: process.env.BREVO_SENDER_NAME || 'Domain Sales',
+              email: process.env.BREVO_SENDER_EMAIL || 'noreply@yourdomain.com',
             },
             to: [{ email: contactEmail }],
             replyTo: {
@@ -120,40 +189,17 @@ export async function POST(request: Request) {
         });
 
         if (response.ok) {
-          emailSent = true;
+          ownerEmailSent = true;
         }
       } catch (error) {
-        console.error('Brevo error:', error);
+        console.error('Brevo owner notification error:', error);
       }
     }
 
-    // Try Resend if others failed
-    if (!emailSent && process.env.RESEND_API_KEY) {
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com',
-            to: contactEmail,
-            reply_to: email,
-            subject: subject,
-            text: emailBody,
-          }),
-        });
+    // Send confirmation email to the sender
+    const confirmationSent = await sendConfirmationEmail(email, name, locale, domainName);
 
-        if (response.ok) {
-          emailSent = true;
-        }
-      } catch (error) {
-        console.error('Resend error:', error);
-      }
-    }
-
-    if (!emailSent) {
+    if (!ownerEmailSent) {
       // If no email service is configured, just log the inquiry
       console.log('New domain inquiry (email service not configured):', {
         domain: domainName,
@@ -163,11 +209,15 @@ export async function POST(request: Request) {
         offer,
         message,
         locale,
+        confirmationSent,
       });
     }
 
     // Always return success to user (even if email failed)
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      confirmationSent: confirmationSent
+    });
   } catch (error) {
     console.error('Contact form error:', error);
     return NextResponse.json(

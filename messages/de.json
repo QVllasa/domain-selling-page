@@ -17,7 +17,6 @@
       "business": "Perfekt für Unternehmen",
       "value": "Hoher kommerzieller Wert",
       "instant": "Sofortiger Transfer nach Zahlung",
-      "support": "24/7 Kundensupport",
       "secure": "Sicherer Transaktionsprozess"
     }
   },
@@ -47,7 +46,7 @@
   },
   "success": {
     "title": "Vielen Dank!",
-    "message": "Ihre Nachricht wurde erfolgreich gesendet. Wir melden uns innerhalb von 24 Stunden bei Ihnen zurück.",
+    "message": "Ihre Nachricht wurde erfolgreich gesendet. Sie erhalten eine Bestätigungs-E-Mail und wir melden uns innerhalb von 24 Stunden bei Ihnen zurück.",
     "backButton": "Weitere Nachricht senden"
   },
   "footer": {

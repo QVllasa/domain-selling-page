@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // These would normally come from environment variables on the server side
   // For display purposes, we'll use placeholder values
@@ -54,6 +56,12 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!turnstileToken) {
+      alert('Please complete the spam protection challenge.');
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -62,13 +70,18 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...formData, locale }),
+        body: JSON.stringify({ 
+          ...formData, 
+          locale,
+          turnstileToken 
+        }),
       });
 
       if (response.ok) {
         setSubmitted(true);
       } else {
-        alert('Failed to send message. Please try again.');
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to send message. Please try again.');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -97,7 +110,17 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                 {t('success.message')}
               </p>
               <Button 
-                onClick={() => setSubmitted(false)}
+                onClick={() => {
+                  setSubmitted(false);
+                  setFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    offer: '',
+                    message: ''
+                  });
+                  setTurnstileToken(null);
+                }}
                 className="mt-4"
                 variant="outline"
               >
@@ -200,29 +223,26 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
             </Card>
 
             {/* Repository Info */}
-            <Card className="border-green-200 bg-green-50">
-              <CardContent className="pt-6">
-                <div className="flex items-start space-x-3">
-                  <Github className="h-6 w-6 text-green-600 mt-1" />
+            <Card className="border-gray-100 bg-gray-50">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-start space-x-2">
+                  <Github className="h-4 w-4 text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-green-800 mb-2">
+                    <p className="text-xs text-gray-500 mb-1">
                       {t('footer.openSource')} GitHub
-                    </h3>
-                    <p className="text-sm text-green-700 mb-3">
+                    </p>
+                    <p className="text-xs text-gray-400 mb-2">
                       {t('footer.builtWith')} Next.js 15, shadcn/ui, Tailwind CSS & next-intl
                     </p>
                     <a
                       href="https://github.com/QVllasa/domain-selling-page"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm text-green-600 hover:text-green-800 font-medium"
+                      className="inline-flex items-center text-xs text-gray-400 hover:text-gray-600"
                     >
                       View on GitHub
-                      <ExternalLink className="ml-1 h-3 w-3" />
+                      <ExternalLink className="ml-1 h-2 w-2" />
                     </a>
-                    <p className="text-xs text-green-600 mt-2 font-medium">
-                      {t('footer.noBroker')}
-                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -307,10 +327,26 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                     />
                   </div>
 
+                  {/* Turnstile spam protection */}
+                  {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                    <div className="flex justify-center">
+                      <Turnstile
+                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                        onSuccess={(token) => setTurnstileToken(token)}
+                        onError={() => setTurnstileToken(null)}
+                        onExpire={() => setTurnstileToken(null)}
+                        options={{
+                          theme: 'light',
+                          size: 'normal',
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || (!turnstileToken && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)}
                   >
                     {isSubmitting ? t('contact.form.submitting') : t('contact.form.submit')}
                   </Button>
@@ -323,8 +359,11 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
               <CardContent className="pt-6">
                 <div className="text-center">
                   <Building className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mb-2">
                     {t('footer.serious')}
+                  </p>
+                  <p className="text-xs text-green-600 font-medium">
+                    {t('footer.noBroker')}
                   </p>
                 </div>
               </CardContent>

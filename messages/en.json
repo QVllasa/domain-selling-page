@@ -17,7 +17,6 @@
       "business": "Perfect for business",
       "value": "High commercial value",
       "instant": "Instant transfer after payment",
-      "support": "24/7 customer support",
       "secure": "Secure transaction process"
     }
   },
@@ -47,7 +46,7 @@
   },
   "success": {
     "title": "Thank You!",
-    "message": "Your message has been sent successfully. We'll get back to you within 24 hours.",
+    "message": "Your message has been sent successfully. You'll receive a confirmation email and we'll get back to you within 24 hours.",
     "backButton": "Send Another Message"
   },
   "footer": {
