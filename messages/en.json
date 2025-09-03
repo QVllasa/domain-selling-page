@@ -1,0 +1,70 @@
+{
+  "header": {
+    "title": "Premium Domain For Sale",
+    "subtitle": "Secure this valuable digital asset today"
+  },
+  "hero": {
+    "title": "Own This Premium Domain",
+    "subtitle": "is available for purchase",
+    "price": "Price"
+  },
+  "features": {
+    "title": "Why This Domain?",
+    "items": {
+      "memorable": "Short and memorable",
+      "seo": "SEO-friendly",
+      "brandable": "Brandable and professional", 
+      "business": "Perfect for business",
+      "value": "High commercial value",
+      "instant": "Instant transfer after payment",
+      "support": "24/7 customer support",
+      "secure": "Secure transaction process"
+    }
+  },
+  "payment": {
+    "title": "Payment Options",
+    "subtitle": "We accept multiple payment methods:",
+    "secure": "All transactions are secure and protected"
+  },
+  "contact": {
+    "title": "Make an Offer",
+    "subtitle": "Interested in purchasing this domain? Send us your offer and we'll get back to you quickly.",
+    "form": {
+      "name": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "offer": "Your Offer",
+      "message": "Message",
+      "namePlaceholder": "John Doe",
+      "emailPlaceholder": "john@example.com",
+      "phonePlaceholder": "+1 (555) 123-4567",
+      "offerPlaceholder": "$8,000",
+      "messagePlaceholder": "Tell us about your intended use for this domain...",
+      "submit": "Send Offer",
+      "submitting": "Sending...",
+      "required": "Required field"
+    }
+  },
+  "success": {
+    "title": "Thank You!",
+    "message": "Your message has been sent successfully. We'll get back to you within 24 hours.",
+    "backButton": "Send Another Message"
+  },
+  "footer": {
+    "serious": "Serious inquiries only. All offers will be reviewed within 24 hours.",
+    "copyright": "Available for purchase. All rights reserved.",
+    "builtWith": "Built with",
+    "openSource": "This application is open source and available on",
+    "noBroker": "Direct sale - No broker fees"
+  },
+  "seo": {
+    "title": "Premium Domain For Sale - {domain}",
+    "description": "Secure this premium domain {domain} for your business. Professional, memorable, and SEO-friendly. Direct sale with no broker fees. Multiple payment options available.",
+    "keywords": "domain for sale, premium domain, buy domain, {domain}, business domain, professional domain"
+  },
+  "navigation": {
+    "languageSelector": "Language",
+    "german": "German",
+    "english": "English"
+  }
+}

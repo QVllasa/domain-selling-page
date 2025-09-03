@@ -1,0 +1,70 @@
+{
+  "header": {
+    "title": "Premium Domain zu verkaufen",
+    "subtitle": "Sichern Sie sich noch heute diesen wertvollen digitalen Vermögenswert"
+  },
+  "hero": {
+    "title": "Besitzen Sie diese Premium Domain",
+    "subtitle": "steht zum Verkauf",
+    "price": "Preis"
+  },
+  "features": {
+    "title": "Warum diese Domain?",
+    "items": {
+      "memorable": "Kurz und einprägsam",
+      "seo": "SEO-freundlich",
+      "brandable": "Markenfähig und professionell",
+      "business": "Perfekt für Unternehmen",
+      "value": "Hoher kommerzieller Wert",
+      "instant": "Sofortiger Transfer nach Zahlung",
+      "support": "24/7 Kundensupport",
+      "secure": "Sicherer Transaktionsprozess"
+    }
+  },
+  "payment": {
+    "title": "Zahlungsoptionen",
+    "subtitle": "Wir akzeptieren verschiedene Zahlungsmethoden:",
+    "secure": "Alle Transaktionen sind sicher und geschützt"
+  },
+  "contact": {
+    "title": "Angebot machen",
+    "subtitle": "Interessiert am Kauf dieser Domain? Senden Sie uns Ihr Angebot und wir melden uns schnell bei Ihnen zurück.",
+    "form": {
+      "name": "Vollständiger Name",
+      "email": "E-Mail Adresse",
+      "phone": "Telefonnummer",
+      "offer": "Ihr Angebot",
+      "message": "Nachricht",
+      "namePlaceholder": "Max Mustermann",
+      "emailPlaceholder": "max@beispiel.de",
+      "phonePlaceholder": "+49 (30) 123-4567",
+      "offerPlaceholder": "€7.000",
+      "messagePlaceholder": "Erzählen Sie uns von Ihrer geplanten Nutzung dieser Domain...",
+      "submit": "Angebot senden",
+      "submitting": "Wird gesendet...",
+      "required": "Pflichtfeld"
+    }
+  },
+  "success": {
+    "title": "Vielen Dank!",
+    "message": "Ihre Nachricht wurde erfolgreich gesendet. Wir melden uns innerhalb von 24 Stunden bei Ihnen zurück.",
+    "backButton": "Weitere Nachricht senden"
+  },
+  "footer": {
+    "serious": "Nur seriöse Anfragen. Alle Angebote werden innerhalb von 24 Stunden geprüft.",
+    "copyright": "Zum Verkauf verfügbar. Alle Rechte vorbehalten.",
+    "builtWith": "Erstellt mit",
+    "openSource": "Diese Anwendung ist Open Source und verfügbar auf",
+    "noBroker": "Direktverkauf - Keine Maklergebühren"
+  },
+  "seo": {
+    "title": "Premium Domain zu verkaufen - {domain}",
+    "description": "Sichern Sie sich diese Premium Domain {domain} für Ihr Unternehmen. Professionell, einprägsam und SEO-freundlich. Direktverkauf ohne Maklergebühren. Verschiedene Zahlungsoptionen verfügbar.",
+    "keywords": "Domain zu verkaufen, Premium Domain, Domain kaufen, {domain}, Business Domain, professionelle Domain"
+  },
+  "navigation": {
+    "languageSelector": "Sprache",
+    "german": "Deutsch",
+    "english": "Englisch"
+  }
+}
