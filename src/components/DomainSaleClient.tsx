@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,13 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileLoaded, setTurnstileLoaded] = useState(false);
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  // Check if running on localhost after component mounts
+  useEffect(() => {
+    setIsLocalhost(window.location.hostname.includes('localhost'));
+  }, []);
 
   // These would normally come from environment variables on the server side
   // For display purposes, we'll use placeholder values
@@ -57,7 +64,8 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!turnstileToken) {
+    // Only require Turnstile token if not on localhost and Turnstile is configured and loaded successfully
+    if (!isLocalhost && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && turnstileLoaded && !turnstileToken) {
       alert('Please complete the spam protection challenge.');
       return;
     }
@@ -73,7 +81,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
         body: JSON.stringify({ 
           ...formData, 
           locale,
-          turnstileToken 
+          turnstileToken: turnstileToken || (isLocalhost ? 'localhost-bypass' : 'bypassed')
         }),
       });
 
@@ -120,6 +128,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                     message: ''
                   });
                   setTurnstileToken(null);
+                  setTurnstileLoaded(false);
                 }}
                 className="mt-4"
                 variant="outline"
@@ -221,32 +230,6 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                 <p className="text-sm text-green-600 font-medium">{t('payment.secure')}</p>
               </CardContent>
             </Card>
-
-            {/* Repository Info */}
-            <Card className="border-gray-100 bg-gray-50">
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-start space-x-2">
-                  <Github className="h-4 w-4 text-gray-400 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 mb-1">
-                      {t('footer.openSource')} GitHub
-                    </p>
-                    <p className="text-xs text-gray-400 mb-2">
-                      {t('footer.builtWith')} Next.js 15, shadcn/ui, Tailwind CSS & next-intl
-                    </p>
-                    <a
-                      href="https://github.com/QVllasa/domain-selling-page"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-xs text-gray-400 hover:text-gray-600"
-                    >
-                      View on GitHub
-                      <ExternalLink className="ml-1 h-2 w-2" />
-                    </a>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column - Contact Form */}
@@ -328,13 +311,22 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                   </div>
 
                   {/* Turnstile spam protection */}
-                  {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                  {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !isLocalhost && (
                     <div className="flex justify-center">
                       <Turnstile
                         siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                        onSuccess={(token) => setTurnstileToken(token)}
-                        onError={() => setTurnstileToken(null)}
-                        onExpire={() => setTurnstileToken(null)}
+                        onSuccess={(token) => {
+                          setTurnstileToken(token);
+                          setTurnstileLoaded(true);
+                        }}
+                        onError={() => {
+                          setTurnstileToken(null);
+                          setTurnstileLoaded(true); // Allow form submission even if Turnstile fails
+                        }}
+                        onExpire={() => {
+                          setTurnstileToken(null);
+                        }}
+                        onLoad={() => setTurnstileLoaded(true)}
                         options={{
                           theme: 'light',
                           size: 'normal',
@@ -343,10 +335,19 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                     </div>
                   )}
 
+                  {/* Development message for localhost */}
+                  {isLocalhost && (
+                    <div className="flex justify-center">
+                      <p className="text-xs text-gray-500 bg-yellow-50 px-3 py-1 rounded">
+                        Development mode - Spam protection disabled
+                      </p>
+                    </div>
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isSubmitting || (!turnstileToken && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)}
+                    disabled={isSubmitting || (!isLocalhost && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileLoaded && !turnstileToken)}
                   >
                     {isSubmitting ? t('contact.form.submitting') : t('contact.form.submit')}
                   </Button>
@@ -371,6 +372,24 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
           </div>
         </div>
       </main>
+
+      {/* Full-width GitHub Section */}
+      <section className="bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="text-center">
+            <a
+              href="https://github.com/QVllasa/domain-selling-page"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <Github className="h-3 w-3 mr-1" />
+              View on GitHub
+              <ExternalLink className="ml-1 h-2 w-2" />
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="bg-white border-t">
