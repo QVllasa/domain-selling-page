@@ -10,10 +10,11 @@ export function generateStaticParams() {
 }
 
 type Props = {
-  params: {locale: string};
+  params: Promise<{locale: string}>;
 };
 
-export async function generateMetadata({params: {locale}}: Props): Promise<Metadata> {
+export async function generateMetadata({params}: Props): Promise<Metadata> {
+  const {locale} = await params;
   const t = await getTranslations({locale, namespace: 'seo'});
   const domainName = process.env.NEXT_PUBLIC_DOMAIN_NAME || 'yourdomain.com';
   
@@ -60,11 +61,13 @@ export async function generateMetadata({params: {locale}}: Props): Promise<Metad
 
 export default async function LocaleLayout({
   children,
-  params: {locale}
+  params
 }: {
   children: React.ReactNode;
-  params: {locale: string};
+  params: Promise<{locale: string}>;
 }) {
+  const {locale} = await params;
+  
   // Ensure that the incoming `locale` is valid
   if (!locales.includes(locale as any)) {
     notFound();

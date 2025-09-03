@@ -5,7 +5,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
+    "dev:node20": "npx --package=node@20 -- npm run dev",
     "build": "next build",
+    "build:node20": "npx --package=node@20 -- npm run build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -23,7 +25,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.400.0",
-    "next": "latest",
+        "next": "15.5.2",
     "next-intl": "^4.3.5",
     "postcss": "^8",
     "react": "^18",
