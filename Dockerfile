@@ -13,6 +13,9 @@ FROM base AS builder
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 
+# Ensure public directory exists (Next.js expects it)
+RUN mkdir -p public
+
 # Build Next.js (uses NEXT_PUBLIC_* vars from environment during build automatically)
 RUN npm run build
 
@@ -23,6 +26,7 @@ WORKDIR /app
 # Install curl for health checks
 RUN apk add --no-cache curl
 
+# Copy built application
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
