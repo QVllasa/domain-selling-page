@@ -43,7 +43,7 @@ async function sendConfirmationEmail(email: string, name: string, locale: string
     Falls Sie in der Zwischenzeit Fragen haben, können Sie gerne auf diese E-Mail antworten.
 
     Mit freundlichen Grüßen
-    Das ${domainName} Team
+    Das WebQube Team
 
     ---
     Diese E-Mail wurde automatisch generiert.
@@ -58,7 +58,7 @@ async function sendConfirmationEmail(email: string, name: string, locale: string
     If you have any questions in the meantime, feel free to reply to this email.
 
     Best regards,
-    The ${domainName} Team
+    The WebQube Team
 
     ---
     This email was automatically generated.
@@ -150,6 +150,7 @@ export async function POST(request: Request) {
 
     const domainName = process.env.NEXT_PUBLIC_DOMAIN_NAME || 'yourdomain.com';
     const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@yourdomain.com';
+    const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL;
 
     // Prepare email content for owner notification
     const isGerman = locale === 'de';
@@ -204,7 +205,10 @@ export async function POST(request: Request) {
               name: process.env.BREVO_SENDER_NAME || 'Domain Sales',
               email: process.env.BREVO_SENDER_EMAIL || 'noreply@yourdomain.com',
             },
-            to: [{ email: contactEmail }],
+            to: [
+              { email: contactEmail },
+              ...(ownerEmail ? [{ email: ownerEmail }] : [])
+            ],
             replyTo: {
               email: email,
               name: name,

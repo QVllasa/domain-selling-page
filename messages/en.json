@@ -37,7 +37,7 @@
       "namePlaceholder": "John Doe",
       "emailPlaceholder": "john@example.com",
       "phonePlaceholder": "+1 (555) 123-4567",
-      "offerPlaceholder": "$8,000",
+      "offerPlaceholder": "€5,000",
       "messagePlaceholder": "Tell us about your intended use for this domain...",
       "submit": "Send Offer",
       "submitting": "Sending...",

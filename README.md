@@ -14,6 +14,7 @@ A modern, professional Next.js 15 application for selling premium domains with a
 - **🐳 Docker Ready**: Production deployment with Coolify/Docker
 - **💳 Payment Options**: Bank Transfer and PayPal with icons
 - **🛡️ TypeScript**: Full type safety and Next.js 15 App Router
+- **🔍 SEO Optimized**: Auto-generated sitemap, robots.txt, and meta tags
 
 ## 📋 Prerequisites
 
@@ -82,6 +83,7 @@ docker-compose up -d
 | `BREVO_API_KEY` | Brevo API key | `xkeysib-...` |
 | `BREVO_SENDER_EMAIL` | Verified sender email | `noreply@example.com` |
 | `BREVO_SENDER_NAME` | Sender display name | `Domain Sales` |
+| `OWNER_NOTIFICATION_EMAIL` | Personal notification email | `your.email@gmail.com` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile public key | `0x4AAA...` |
 | `TURNSTILE_SECRET_KEY` | Turnstile private key | `0x4AAA...` |
 

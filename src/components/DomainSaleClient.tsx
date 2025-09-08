@@ -160,12 +160,8 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                 <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center">
               <LanguageSelector currentLocale={locale} />
-              <div className="text-right">
-                <p className="text-xs sm:text-sm text-gray-600">{t('header.title')}</p>
-                <p className="text-sm sm:text-lg font-semibold text-blue-600">{t('hero.price')}</p>
-              </div>
             </div>
           </div>
         </div>
