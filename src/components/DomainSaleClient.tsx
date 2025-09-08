@@ -42,12 +42,17 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   const currency = process.env.NEXT_PUBLIC_CURRENCY || 'EUR';
   const paymentOptions = process.env.NEXT_PUBLIC_PAYMENT_OPTIONS || 'Bank Transfer,PayPal';
   
-  const formatPrice = (price: string, currency: string) => {
+  const formatPrice = (price: string, currency: string, locale: string) => {
     const numPrice = parseInt(price);
-    return currency === 'EUR' ? `€${numPrice.toLocaleString()}` : `$${numPrice.toLocaleString()}`;
+    // Use locale-specific formatting consistently
+    const formatter = new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+    return currency === 'EUR' ? `€${formatter.format(numPrice)}` : `$${formatter.format(numPrice)}`;
   };
   
-  const askingPrice = formatPrice(domainPrice, currency);
+  const askingPrice = formatPrice(domainPrice, currency, locale);
 
   // Payment icons mapping
   const getPaymentIcon = (option: string) => {
