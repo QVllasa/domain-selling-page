@@ -1,13 +1,13 @@
 # 🏷️ Domain Selling Page
 
-A modern, professional Next.js 15 application for selling premium domains with automated email confirmations, spam protection, and a beautiful responsive interface.
+A premium Next.js 15 domain selling page with a dark luxury "Noir Auction House" design, automated email confirmations via Brevo, Cloudflare Turnstile spam protection, and full i18n support.
 
 ![Domain Selling Page](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC) ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
 
 ## ✨ Features
 
-- **🎨 Modern UI**: shadcn/ui components with Tailwind CSS
-- **📱 Responsive Design**: Mobile, tablet, and desktop optimized  
+- **🎨 Dark Luxury UI**: "Noir Auction House" design with Cormorant Garamond + Sora typography, gold accents, noise texture, and staggered scroll animations
+- **📱 Responsive Design**: Mobile, tablet, and desktop optimized
 - **🔒 Spam Protection**: Cloudflare Turnstile integration
 - **📧 Dual Email System**: Owner notifications + buyer confirmations via Brevo
 - **🌍 Internationalization**: German and English support
@@ -89,7 +89,7 @@ docker-compose up -d
 
 ## 🎨 Customization
 
-- **Styling**: Modify `src/components/` and `tailwind.config.js`
+- **Styling**: Modify `src/components/DomainSaleClient.tsx`, `src/app/globals.css`, and `tailwind.config.js`
 - **Content**: Update `messages/de.json` and `messages/en.json`
 - **Payment Options**: Change `NEXT_PUBLIC_PAYMENT_OPTIONS` environment variable
 - **Languages**: Add new JSON files in `messages/` folder
