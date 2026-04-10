@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { buildConfirmationEmail, buildOwnerNotificationEmail } from '@/lib/email-templates';
 
-// Verify Turnstile token
+// ─── Verify Turnstile token ───
 async function verifyTurnstile(token: string): Promise<boolean> {
   if (!process.env.TURNSTILE_SECRET_KEY) {
     console.warn('Turnstile secret key not configured');
@@ -13,7 +14,10 @@ async function verifyTurnstile(token: string): Promise<boolean> {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: `secret=${process.env.TURNSTILE_SECRET_KEY}&response=${token}`,
+      body: new URLSearchParams({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: token,
+      }).toString(),
     });
 
     const result = await response.json();
@@ -24,96 +28,61 @@ async function verifyTurnstile(token: string): Promise<boolean> {
   }
 }
 
-// Send confirmation email to the sender
-async function sendConfirmationEmail(email: string, name: string, locale: string, domainName: string) {
-  const isGerman = locale === 'de';
-  
-  const subject = isGerman 
-    ? `Bestätigung: Ihr Angebot für ${domainName} wurde erhalten`
-    : `Confirmation: Your offer for ${domainName} has been received`;
-  
-  const emailBody = isGerman ? `
-    Hallo ${name},
+// ─── Send email via Brevo ───
+async function sendBrevoEmail({
+  to,
+  replyTo,
+  subject,
+  html,
+  text,
+}: {
+  to: { email: string; name?: string }[];
+  replyTo?: { email: string; name?: string };
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<boolean> {
+  if (!process.env.BREVO_API_KEY) return false;
 
-    vielen Dank für Ihr Interesse an der Domain ${domainName}.
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    Wir haben Ihr Angebot erfolgreich erhalten und werden es sorgfältig prüfen. 
-    Unser Team wird sich innerhalb von 24 Stunden bei Ihnen melden.
-
-    Falls Sie in der Zwischenzeit Fragen haben, können Sie gerne auf diese E-Mail antworten.
-
-    Mit freundlichen Grüßen
-    Das WebQube Team
-
-    ---
-    Diese E-Mail wurde automatisch generiert.
-  ` : `
-    Hello ${name},
-
-    Thank you for your interest in the domain ${domainName}.
-
-    We have successfully received your offer and will review it carefully.
-    Our team will get back to you within 24 hours.
-
-    If you have any questions in the meantime, feel free to reply to this email.
-
-    Best regards,
-    The WebQube Team
-
-    ---
-    This email was automatically generated.
-  `;
-
-  // Try Brevo with timeout and better error handling
-  if (process.env.BREVO_API_KEY) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'api-key': process.env.BREVO_API_KEY,
-          'content-type': 'application/json',
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: process.env.BREVO_SENDER_NAME || 'Domain Sales',
+          email: process.env.BREVO_SENDER_EMAIL || 'noreply@yourdomain.com',
         },
-        body: JSON.stringify({
-          sender: {
-            name: process.env.BREVO_SENDER_NAME || 'Domain Sales',
-            email: process.env.BREVO_SENDER_EMAIL || 'noreply@yourdomain.com',
-          },
-          to: [{ email: email, name: name }],
-          subject: subject,
-          htmlContent: emailBody.replace(/\n/g, '<br>'),
-          textContent: emailBody,
-        }),
-        signal: controller.signal,
-      });
+        to,
+        ...(replyTo ? { replyTo } : {}),
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+      signal: controller.signal,
+    });
 
-      clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
 
-      if (response.ok) {
-        console.log('Confirmation email sent successfully to:', email);
-        return true;
-      } else {
-        const errorText = await response.text();
-        console.error('Brevo API error response:', response.status, errorText);
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          console.error('Brevo confirmation email timeout - request aborted after 5 seconds');
-        } else {
-          console.error('Brevo confirmation email error:', error.message);
-        }
-      } else {
-        console.error('Brevo confirmation email error:', String(error));
-      }
+    if (response.ok) return true;
+    const errorText = await response.text();
+    console.error('Brevo API error response:', response.status, errorText);
+    return false;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Brevo email timeout - request aborted after 10 seconds');
+    } else {
+      console.error('Brevo email error:', error instanceof Error ? error.message : String(error));
     }
+    return false;
   }
-
-  console.log('Confirmation email not sent - email service unavailable');
-  return false;
 }
 
 export async function POST(request: Request) {
@@ -152,97 +121,35 @@ export async function POST(request: Request) {
     const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@yourdomain.com';
     const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL;
 
-    // Prepare email content for owner notification
-    const isGerman = locale === 'de';
-    const subject = isGerman 
-      ? `Neues Angebot für ${domainName}` 
-      : `New Offer for ${domainName}`;
-    
-    const emailBody = isGerman ? `
-      Neue Anfrage für Domain: ${domainName}
-      
-      Von: ${name}
-      E-Mail: ${email}
-      Telefon: ${phone || 'Nicht angegeben'}
-      Angebot: ${offer}
-      
-      Nachricht:
-      ${message || 'Keine zusätzliche Nachricht'}
-      
-      ---
-      Diese E-Mail wurde automatisch von der Domain-Verkaufsseite generiert.
-    ` : `
-      New inquiry for domain: ${domainName}
-      
-      From: ${name}
-      Email: ${email}
-      Phone: ${phone || 'Not provided'}
-      Offer: ${offer}
-      
-      Message:
-      ${message || 'No additional message provided'}
-      
-      ---
-      This email was automatically generated from the domain sales page.
-    `;
+    // Build the two emails
+    const ownerEmailContent = buildOwnerNotificationEmail({
+      name, email, phone, offer, message, domainName, locale,
+    });
+    const confirmationEmailContent = buildConfirmationEmail({
+      name, email, phone, offer, message, domainName, locale,
+    });
 
     // Send notification to domain owner
-    let ownerEmailSent = false;
-    if (process.env.BREVO_API_KEY) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const ownerEmailSent = await sendBrevoEmail({
+      to: [
+        { email: contactEmail },
+        ...(ownerEmail && ownerEmail !== contactEmail ? [{ email: ownerEmail }] : []),
+      ],
+      replyTo: { email, name },
+      subject: ownerEmailContent.subject,
+      html: ownerEmailContent.html,
+      text: ownerEmailContent.text,
+    });
 
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'api-key': process.env.BREVO_API_KEY,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            sender: {
-              name: process.env.BREVO_SENDER_NAME || 'Domain Sales',
-              email: process.env.BREVO_SENDER_EMAIL || 'noreply@yourdomain.com',
-            },
-            to: [
-              { email: contactEmail },
-              ...(ownerEmail ? [{ email: ownerEmail }] : [])
-            ],
-            replyTo: {
-              email: email,
-              name: name,
-            },
-            subject: subject,
-            htmlContent: emailBody.replace(/\n/g, '<br>'),
-            textContent: emailBody,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          ownerEmailSent = true;
-          console.log('Owner notification email sent successfully');
-        } else {
-          const errorText = await response.text();
-          console.error('Brevo owner notification API error:', response.status, errorText);
-        }
-      } catch (error: unknown) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.error('Brevo owner notification timeout - request aborted after 10 seconds');
-        } else {
-          console.error('Brevo owner notification error:', error);
-        }
-      }
-    }
-
-    // Send confirmation email to the sender
-    const confirmationSent = await sendConfirmationEmail(email, name, locale, domainName);
+    // Send confirmation to the prospect
+    const confirmationSent = await sendBrevoEmail({
+      to: [{ email, name }],
+      subject: confirmationEmailContent.subject,
+      html: confirmationEmailContent.html,
+      text: confirmationEmailContent.text,
+    });
 
     if (!ownerEmailSent) {
-      // If no email service is configured, just log the inquiry
       console.log('New domain inquiry (email service not configured):', {
         domain: domainName,
         name,
@@ -256,9 +163,9 @@ export async function POST(request: Request) {
     }
 
     // Always return success to user (even if email failed)
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      confirmationSent: confirmationSent
+      confirmationSent,
     });
   } catch (error) {
     console.error('Contact form error:', error);
