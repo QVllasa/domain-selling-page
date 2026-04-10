@@ -1,35 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { LanguageSelector } from '@/components/LanguageSelector';
 
 interface DomainSaleClientProps {
   locale: string;
-}
-
-function useInView(threshold = 0.12) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isInView, setIsInView] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return [ref, isInView] as const;
 }
 
 export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
@@ -46,14 +23,9 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
   const [isLocalhost, setIsLocalhost] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setIsLocalhost(window.location.hostname.includes('localhost'));
-
-    const handleScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const domainName = process.env.NEXT_PUBLIC_DOMAIN_NAME || 'yourdomain.com';
@@ -71,6 +43,11 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   };
 
   const askingPrice = formatPrice(domainPrice, currency, locale);
+
+  // Domain-derived metadata
+  const tld = '.' + domainName.split('.').slice(1).join('.');
+  const domainBase = domainName.split('.')[0];
+  const charCount = domainBase.length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,26 +84,23 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const [featuresRef, featuresInView] = useInView();
-  const [formRef, formInView] = useInView(0.05);
-
-  // --- Success State ---
+  /* ─── Success State ─── */
   if (submitted) {
     return (
-      <div className="min-h-screen bg-noir flex items-center justify-center p-6 noise-bg">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[120px]" />
+      <div className="min-h-screen bg-noir flex items-center justify-center p-6 noise-bg relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-gold/[0.06] blur-[140px]" />
         </div>
-        <div className="relative z-10 text-center max-w-md animate-fade-in">
-          <div className="w-20 h-20 mx-auto mb-8 rounded-full border border-gold/30 flex items-center justify-center animate-scale-in">
-            <svg className="w-9 h-9 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <div className="relative z-10 text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-10 border border-gold/30 flex items-center justify-center animate-scale-in">
+            <svg className="w-8 h-8 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" className="animate-draw-check" />
             </svg>
           </div>
-          <h2 className="font-display text-4xl md:text-5xl font-light text-cream mb-4 tracking-tight">
+          <h2 className="font-display text-[clamp(2.5rem,5vw,4rem)] font-normal text-cream mb-5 tracking-[-0.02em] italic animate-fade-up">
             {t('success.title')}
           </h2>
-          <p className="text-stone-400 text-base md:text-lg mb-10 font-light leading-relaxed">
+          <p className="text-stone-400 text-base mb-12 font-light leading-relaxed animate-fade-up" style={{ animationDelay: '0.15s' }}>
             {t('success.message')}
           </p>
           <button
@@ -136,277 +110,259 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
               setTurnstileToken(null);
               setTurnstileLoaded(false);
             }}
-            className="px-8 py-3.5 border border-gold/25 text-gold hover:bg-gold/10 transition-all duration-300 text-xs tracking-[0.25em] uppercase font-body font-medium"
+            className="font-mono px-8 py-4 border border-gold/30 text-gold hover:bg-gold hover:text-noir transition-all duration-500 text-[10px] tracking-[0.3em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 animate-fade-up"
+            style={{ animationDelay: '0.3s' }}
           >
-            {t('success.backButton')}
+            ← {t('success.backButton')}
           </button>
         </div>
       </div>
     );
   }
 
-  // --- Main Page ---
+  /* ─── Main Page ─── */
   return (
-    <div className="min-h-screen bg-noir text-cream noise-bg">
-      {/* Fixed Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? 'bg-noir/80 backdrop-blur-2xl border-b border-white/[0.04]' : ''
-      }`}>
-        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
-          <span className="font-display text-lg tracking-tight text-cream/70 font-light">{domainName}</span>
-          <LanguageSelector currentLocale={locale} />
+    <div className="min-h-screen bg-noir text-cream noise-bg relative overflow-hidden">
+
+      {/* Ambient glow — single, subtle */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[20%] left-[15%] w-[700px] h-[700px] rounded-full bg-gold/[0.04] blur-[160px]" />
+        <div className="absolute bottom-[10%] right-[20%] w-[500px] h-[500px] rounded-full bg-gold/[0.025] blur-[140px]" />
+      </div>
+
+      {/* ═══════════ TOP BAR ═══════════ */}
+      <header className="relative z-20 px-6 lg:px-12 py-6 flex items-center justify-between border-b border-white/[0.04]">
+        <div className="flex items-center gap-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-gold/70">
+            {locale === 'de' ? 'Zu Verkaufen' : 'For Sale'}
+          </span>
+          <span className="hidden md:inline-block w-8 h-px bg-white/[0.08]" />
+          <span className="hidden md:inline-block font-mono text-[10px] tracking-[0.25em] uppercase text-stone-500">
+            {locale === 'de' ? 'Premium Domain' : 'Premium Domain'}
+          </span>
         </div>
-      </nav>
+        <LanguageSelector currentLocale={locale} />
+      </header>
 
-      {/* ========= HERO SECTION ========= */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gold/[0.06] rounded-full blur-[140px] animate-pulse-slow" />
-          <div className="absolute top-[60%] left-1/4 w-[300px] h-[300px] bg-gold/[0.03] rounded-full blur-[100px]" />
-          {/* Bottom edge line */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/15 to-transparent" />
-        </div>
+      {/* ═══════════ MAIN SPLIT LAYOUT ═══════════ */}
+      <main className="relative z-10 grid lg:grid-cols-2 min-h-[calc(100vh-65px)]">
 
-        <div className="relative z-10 text-center animate-stagger">
-          {/* Eyebrow */}
-          <p className="text-[10px] sm:text-xs tracking-[0.45em] uppercase text-gold/60 mb-8 sm:mb-10 font-body font-medium stagger-1">
-            {t('header.subtitle')}
-          </p>
+        {/* ─── LEFT: Domain Hero ─── */}
+        <div className="relative px-6 sm:px-10 lg:px-16 xl:px-24 py-12 lg:py-16 flex flex-col justify-center">
 
-          {/* Domain Name — the star of the show */}
-          <h1 className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] font-light tracking-tight leading-[0.85] mb-6 sm:mb-8 stagger-2">
-            <span className="bg-gradient-to-b from-cream via-cream/90 to-cream/50 bg-clip-text text-transparent">
-              {domainName}
-            </span>
-          </h1>
+          <div className="max-w-xl">
+            {/* Eyebrow */}
+            <p className="font-mono text-[10px] tracking-[0.35em] uppercase text-gold/60 mb-8 animate-fade-up">
+              {locale === 'de' ? 'Premium Domain · Direktverkauf' : 'Premium Domain · Direct Sale'}
+            </p>
 
-          {/* Subtitle */}
-          <p className="text-stone-500 text-base sm:text-lg md:text-xl font-light mb-14 stagger-3">
-            {t('hero.subtitle')}
-          </p>
+            {/* Domain Name */}
+            <h1 className="font-display font-normal text-[clamp(3.5rem,9vw,8rem)] leading-[0.9] tracking-[-0.04em] text-cream mb-8 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+              {domainBase}<span className="italic text-gold">{tld}</span>
+            </h1>
 
-          {/* Price Badge */}
-          <div className="inline-flex items-center gap-5 px-8 sm:px-10 py-4 sm:py-5 border border-gold/15 bg-gold/[0.04] stagger-4">
-            <span className="text-[10px] sm:text-xs tracking-[0.35em] uppercase text-stone-500 font-body">{t('hero.price')}</span>
-            <span className="w-px h-6 sm:h-7 bg-gold/15" />
-            <span className="font-display text-2xl sm:text-3xl md:text-4xl font-light text-gold tracking-tight">{askingPrice}</span>
-          </div>
-        </div>
+            {/* Subtitle */}
+            <p className="font-display italic text-[clamp(1.1rem,1.6vw,1.4rem)] text-stone-400 leading-relaxed mb-10 max-w-md animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              {locale === 'de'
+                ? `Eine seltene ${charCount}-Buchstaben ${tld} Domain. Kurz, einprägsam, einzigartig.`
+                : `A rare ${charCount}-letter ${tld} domain. Short, memorable, unforgettable.`}
+            </p>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 sm:bottom-14 left-1/2 -translate-x-1/2 stagger-5 flex flex-col items-center gap-3">
-          <span className="text-[9px] tracking-[0.3em] uppercase text-stone-600 font-body">Scroll</span>
-          <div className="w-px h-10 sm:h-14 bg-gradient-to-b from-gold/30 to-transparent animate-scroll-line" />
-        </div>
-      </section>
-
-      {/* ========= FEATURES SECTION ========= */}
-      <section
-        ref={featuresRef}
-        className={`py-24 sm:py-32 lg:py-40 px-6 transition-all duration-1000 ease-out ${
-          featuresInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}
-      >
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16 sm:mb-20">
-            <span className="text-[10px] sm:text-xs tracking-[0.45em] uppercase text-gold/50 font-body font-medium">
-              {t('features.title')}
-            </span>
-            <div className="mt-5 w-10 h-px bg-gold/25 mx-auto" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-0">
-            {Object.entries(t.raw('features.items')).map(([key, value], i) => (
-              <div
-                key={key}
-                className="flex items-center gap-5 py-5 border-b border-white/[0.04] group transition-all duration-500"
-                style={{
-                  transitionDelay: featuresInView ? `${i * 80}ms` : '0ms',
-                  opacity: featuresInView ? 1 : 0,
-                  transform: featuresInView ? 'translateX(0)' : 'translateX(-12px)',
-                }}
-              >
-                <span className="text-gold/40 text-xs font-body select-none">{String(i + 1).padStart(2, '0')}</span>
-                <span className="text-stone-400 font-light text-[15px] group-hover:text-cream transition-colors duration-300">
-                  {value as string}
-                </span>
+            {/* Price block */}
+            <div className="flex items-baseline gap-6 mb-12 pb-12 border-b border-white/[0.06] animate-fade-up" style={{ animationDelay: '0.3s' }}>
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-stone-500 mb-2">
+                  {locale === 'de' ? 'Festpreis' : 'Asking Price'}
+                </p>
+                <p className="font-display text-[clamp(2.5rem,5vw,4rem)] font-normal text-gold leading-none tracking-[-0.02em]">
+                  {askingPrice}
+                </p>
               </div>
-            ))}
+              <div className="hidden sm:block">
+                <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-stone-500 mb-2">
+                  {locale === 'de' ? 'Oder Gebot' : 'Or Make Offer'}
+                </p>
+                <p className="font-display italic text-stone-500 text-base">→</p>
+              </div>
+            </div>
+
+            {/* Value props */}
+            <ul className="space-y-3 animate-fade-up" style={{ animationDelay: '0.4s' }}>
+              {[
+                { de: 'Sofortige Übertragung', en: 'Instant transfer after payment' },
+                { de: 'Direktverkauf · Keine Maklergebühren', en: 'Direct sale · No broker fees' },
+                { de: paymentOptions.split(',').map(p => p.trim()).join(' · '), en: paymentOptions.split(',').map(p => p.trim()).join(' · ') },
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 text-[13px] text-stone-400 font-light">
+                  <span className="w-6 h-px bg-gold/40 shrink-0" />
+                  {locale === 'de' ? item.de : item.en}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      </section>
 
-      {/* ========= FORM SECTION ========= */}
-      <section
-        ref={formRef}
-        className={`py-24 sm:py-32 lg:py-40 px-6 transition-all duration-1000 ease-out ${
-          formInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}
-      >
-        <div className="max-w-2xl mx-auto">
-          {/* Payment Methods */}
-          <div className="text-center mb-16 sm:mb-20">
-            <span className="text-[10px] sm:text-xs tracking-[0.45em] uppercase text-gold/50 font-body font-medium">
-              {t('payment.title')}
-            </span>
-            <div className="mt-5 w-10 h-px bg-gold/25 mx-auto mb-8" />
-            <div className="flex justify-center gap-3 flex-wrap">
-              {paymentOptions.split(',').map((option, index) => (
-                <span
-                  key={index}
-                  className="px-5 py-2.5 border border-white/[0.06] text-stone-400 text-xs sm:text-sm font-light tracking-wider"
-                >
-                  {option.trim()}
-                </span>
-              ))}
-            </div>
-            <p className="text-stone-600 text-xs mt-5 tracking-wide">{t('payment.secure')}</p>
-          </div>
+        {/* ─── RIGHT: Contact Form ─── */}
+        <div className="relative bg-white/[0.012] backdrop-blur-sm lg:border-l border-t lg:border-t-0 border-white/[0.06] px-6 sm:px-10 lg:px-14 xl:px-20 py-12 lg:py-16 flex flex-col justify-center">
 
-          {/* Contact Form Card */}
-          <div className="border border-white/[0.05] bg-white/[0.015] backdrop-blur-sm">
-            {/* Form Header */}
-            <div className="text-center px-8 pt-10 sm:pt-14 pb-8 sm:pb-10 border-b border-white/[0.04]">
-              <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">
+          <div className="max-w-md w-full mx-auto lg:mx-0">
+            {/* Form header */}
+            <div className="mb-10 animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              <p className="font-mono text-[10px] tracking-[0.35em] uppercase text-gold/60 mb-3">
+                {locale === 'de' ? 'Kontakt aufnehmen' : 'Get in Touch'}
+              </p>
+              <h2 className="font-display text-[clamp(1.75rem,3vw,2.5rem)] font-normal text-cream tracking-[-0.02em] mb-3">
                 {t('contact.title')}
               </h2>
-              <p className="text-stone-500 text-sm font-light max-w-sm mx-auto leading-relaxed">
-                {t('contact.subtitle')}
+              <p className="text-stone-500 text-sm font-light leading-relaxed">
+                {locale === 'de'
+                  ? 'Senden Sie Ihr Angebot — Antwort innerhalb von 24 Stunden.'
+                  : 'Submit your offer — response within 24 hours.'}
               </p>
             </div>
 
-            {/* Form Body */}
-            <div className="p-8 sm:p-12">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <InputField
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    label={`${t('contact.form.name')} *`}
-                    placeholder={t('contact.form.namePlaceholder')}
-                  />
-                  <InputField
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    label={`${t('contact.form.email')} *`}
-                    placeholder={t('contact.form.emailPlaceholder')}
-                  />
-                </div>
-
-                <InputField
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  label={t('contact.form.phone')}
-                  placeholder={t('contact.form.phonePlaceholder')}
-                />
-
-                <InputField
-                  id="offer"
-                  name="offer"
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-7 animate-fade-up"
+              style={{ animationDelay: '0.35s' }}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
+                <FormField
+                  id="name"
+                  name="name"
                   type="text"
                   required
-                  value={formData.offer}
+                  value={formData.name}
                   onChange={handleChange}
-                  label={`${t('contact.form.offer')} *`}
-                  placeholder={t('contact.form.offerPlaceholder')}
+                  label={t('contact.form.name')}
+                  placeholder={t('contact.form.namePlaceholder')}
                 />
+                <FormField
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  label={t('contact.form.email')}
+                  placeholder={t('contact.form.emailPlaceholder')}
+                />
+              </div>
 
-                <div>
-                  <label htmlFor="message" className="block text-[10px] sm:text-xs tracking-[0.2em] uppercase text-stone-500 mb-3 font-body">
-                    {t('contact.form.message')}
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder={t('contact.form.messagePlaceholder')}
-                    rows={4}
-                    className="w-full bg-transparent border-b border-white/[0.08] focus:border-gold/40 px-0 py-3 text-cream placeholder:text-stone-700 outline-none transition-colors duration-300 text-[15px] font-light resize-none"
+              <FormField
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                label={t('contact.form.phone')}
+                placeholder={t('contact.form.phonePlaceholder')}
+              />
+
+              <FormField
+                id="offer"
+                name="offer"
+                type="text"
+                required
+                value={formData.offer}
+                onChange={handleChange}
+                label={t('contact.form.offer')}
+                placeholder={t('contact.form.offerPlaceholder')}
+                highlight
+              />
+
+              <div className="bid-field group">
+                <label htmlFor="message" className="block font-mono text-[10px] tracking-[0.25em] uppercase text-stone-500 group-focus-within:text-gold transition-colors duration-500 mb-3">
+                  {t('contact.form.message')}
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  placeholder={t('contact.form.messagePlaceholder')}
+                  rows={3}
+                  className="w-full bg-transparent border-b border-white/[0.08] hover:border-white/[0.15] focus:border-transparent px-0 py-3 text-cream placeholder:text-stone-700 outline-none transition-all duration-500 text-[15px] font-light resize-none"
+                />
+              </div>
+
+              {/* Turnstile */}
+              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !isLocalhost && (
+                <div className="flex justify-start pt-2">
+                  <Turnstile
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => { setTurnstileToken(token); setTurnstileLoaded(true); }}
+                    onError={() => { setTurnstileToken(null); setTurnstileLoaded(true); }}
+                    onExpire={() => { setTurnstileToken(null); }}
+                    onLoad={() => setTurnstileLoaded(true)}
+                    options={{ theme: 'dark', size: 'normal' }}
                   />
                 </div>
+              )}
 
-                {/* Turnstile */}
-                {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !isLocalhost && (
-                  <div className="flex justify-center pt-2">
-                    <Turnstile
-                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => { setTurnstileToken(token); setTurnstileLoaded(true); }}
-                      onError={() => { setTurnstileToken(null); setTurnstileLoaded(true); }}
-                      onExpire={() => { setTurnstileToken(null); }}
-                      onLoad={() => setTurnstileLoaded(true)}
-                      options={{ theme: 'dark', size: 'normal' }}
-                    />
-                  </div>
-                )}
+              {isLocalhost && (
+                <p className="font-mono text-[9px] text-stone-700 tracking-[0.2em] uppercase">
+                  DEV MODE — Spam protection disabled
+                </p>
+              )}
 
-                {isLocalhost && (
-                  <div className="flex justify-center">
-                    <p className="text-[10px] text-stone-600 bg-white/[0.03] px-4 py-1.5 tracking-wider">
-                      DEV MODE &mdash; Spam protection disabled
-                    </p>
-                  </div>
-                )}
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={isSubmitting || (!isLocalhost && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileLoaded && !turnstileToken)}
+                className="group w-full relative py-5 mt-4 bg-gold text-noir font-mono text-[11px] tracking-[0.35em] uppercase overflow-hidden disabled:opacity-20 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 transition-all duration-500 hover:tracking-[0.45em] hover:bg-gold-light"
+              >
+                <span className="relative z-10 inline-flex items-center gap-3">
+                  {isSubmitting && (
+                    <span className="inline-block w-3 h-3 border-[1.5px] border-noir/30 border-t-noir rounded-full animate-spin" />
+                  )}
+                  {isSubmitting ? t('contact.form.submitting') : t('contact.form.submit')}
+                  <span className="ml-1 transition-transform duration-500 group-hover:translate-x-1">→</span>
+                </span>
+              </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting || (!isLocalhost && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileLoaded && !turnstileToken)}
-                  className="group w-full relative py-4.5 sm:py-5 bg-gold text-noir font-medium text-xs sm:text-sm tracking-[0.25em] uppercase overflow-hidden transition-all duration-300 disabled:opacity-25 disabled:cursor-not-allowed hover:bg-gold-light active:scale-[0.995]"
-                >
-                  <span className="relative z-10">
-                    {isSubmitting ? t('contact.form.submitting') : t('contact.form.submit')}
-                  </span>
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="text-center mt-10 sm:mt-12 space-y-2">
-            <p className="text-stone-600 text-xs tracking-wider font-light">{t('footer.serious')}</p>
-            <p className="text-gold/30 text-[11px] tracking-wider">{t('footer.noBroker')}</p>
+              <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-stone-700 text-center pt-2">
+                {locale === 'de'
+                  ? 'Diskret · Sicher · Direkt'
+                  : 'Discreet · Secure · Direct'}
+              </p>
+            </form>
           </div>
         </div>
-      </section>
+      </main>
 
-      {/* ========= FOOTER ========= */}
-      <footer className="border-t border-white/[0.04] py-8 sm:py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-stone-700 text-[11px] tracking-wider">
-            &copy; {new Date().getFullYear()} {domainName}. {t('footer.copyright')}
-          </p>
-          <a
-            href="https://github.com/QVllasa/domain-selling-page"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-stone-700 hover:text-stone-400 transition-colors duration-300 text-[11px] tracking-wider flex items-center gap-2"
-          >
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-            Open Source
-          </a>
-        </div>
+      {/* ═══════════ FOOTER ═══════════ */}
+      <footer className="relative z-10 px-6 lg:px-12 py-5 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-stone-700">
+          © {new Date().getFullYear()} ⋅ {domainName}
+        </p>
+        <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-stone-700">
+          {t('footer.serious')}
+        </p>
+        <a
+          href="https://github.com/QVllasa/domain-selling-page"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[9px] tracking-[0.25em] uppercase text-stone-700 hover:text-gold transition-colors duration-500 inline-flex items-center gap-2"
+        >
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          Source
+        </a>
       </footer>
     </div>
   );
 }
 
-/* Reusable input field component */
-function InputField({
-  id, name, type, required, value, onChange, label, placeholder
+/* ═══════════════════════════════════════════════
+   Form Field — clean luxury input
+   ═══════════════════════════════════════════════ */
+
+function FormField({
+  id, name, type, required, value, onChange, label, placeholder, highlight = false
 }: {
   id: string;
   name: string;
@@ -416,11 +372,12 @@ function InputField({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   label: string;
   placeholder: string;
+  highlight?: boolean;
 }) {
   return (
-    <div>
-      <label htmlFor={id} className="block text-[10px] sm:text-xs tracking-[0.2em] uppercase text-stone-500 mb-3 font-body">
-        {label}
+    <div className="bid-field group">
+      <label htmlFor={id} className="block font-mono text-[10px] tracking-[0.25em] uppercase text-stone-500 group-focus-within:text-gold transition-colors duration-500 mb-3">
+        {label} {required && <span className="text-gold/60">*</span>}
       </label>
       <input
         id={id}
@@ -430,7 +387,7 @@ function InputField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full bg-transparent border-b border-white/[0.08] focus:border-gold/40 px-0 py-3 text-cream placeholder:text-stone-700 outline-none transition-colors duration-300 text-[15px] font-light"
+        className={`w-full bg-transparent border-b border-white/[0.08] hover:border-white/[0.15] focus:border-transparent px-0 py-3 text-cream placeholder:text-stone-700 outline-none transition-all duration-500 ${highlight ? 'font-display text-2xl' : 'text-[15px] font-light'}`}
       />
     </div>
   );

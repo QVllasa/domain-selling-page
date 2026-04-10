@@ -1,22 +1,28 @@
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages, getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
-import {Cormorant_Garamond, Sora} from 'next/font/google';
+import {Bodoni_Moda, Geist, Geist_Mono} from 'next/font/google';
 import {locales} from '@/i18n/config';
 import '../globals.css';
 import type { Metadata } from 'next';
 
-const cormorant = Cormorant_Garamond({
+const bodoni = Bodoni_Moda({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '700', '900'],
+  style: ['normal', 'italic'],
   variable: '--font-display',
   display: 'swap',
 });
 
-const sora = Sora({
+const geist = Geist({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
   variable: '--font-body',
+  display: 'swap',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -90,7 +96,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${cormorant.variable} ${sora.variable}`}>
+    <html lang={locale} className={`${bodoni.variable} ${geist.variable} ${geistMono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.ico" />

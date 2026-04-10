@@ -229,8 +229,8 @@ export async function POST(request: Request) {
           const errorText = await response.text();
           console.error('Brevo owner notification API error:', response.status, errorText);
         }
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
           console.error('Brevo owner notification timeout - request aborted after 10 seconds');
         } else {
           console.error('Brevo owner notification error:', error);
