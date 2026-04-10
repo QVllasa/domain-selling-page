@@ -1,11 +1,70 @@
 import { NextResponse } from 'next/server';
 import { buildConfirmationEmail, buildOwnerNotificationEmail } from '@/lib/email-templates';
 
-// ─── Verify Turnstile token ───
+/* ─── Constants ─── */
+const IS_DEV = process.env.NODE_ENV === 'development';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_NAME = 200;
+const MAX_EMAIL = 254;
+const MAX_PHONE = 30;
+const MAX_OFFER = 100;
+const MAX_MESSAGE = 5000;
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+/* ─── In-memory rate limiter (per IP) ─── */
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  // Reset or initialize
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count++;
+  return { allowed: true };
+}
+
+// Periodic cleanup of expired entries (runs at most once per minute)
+let lastCleanup = 0;
+function maybeCleanup() {
+  const now = Date.now();
+  if (now - lastCleanup < 60_000) return;
+  lastCleanup = now;
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetAt) rateLimitMap.delete(ip);
+  }
+}
+
+function getClientIp(request: Request): string {
+  // Coolify/Traefik proxies set x-forwarded-for
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp;
+  return 'unknown';
+}
+
+/* ─── Verify Turnstile token ─── */
 async function verifyTurnstile(token: string): Promise<boolean> {
+  // Dev-only escape hatch: in development with the literal "dev" placeholder
+  // token, skip the Cloudflare round-trip. This is the ONLY bypass and it
+  // requires NODE_ENV=development which Next.js never sets in production builds.
+  if (IS_DEV && token === 'dev') {
+    return true;
+  }
+
   if (!process.env.TURNSTILE_SECRET_KEY) {
-    console.warn('Turnstile secret key not configured');
-    return true; // Allow without verification if not configured
+    console.error('CRITICAL: Turnstile secret key not configured');
+    return false;
   }
 
   try {
@@ -21,14 +80,14 @@ async function verifyTurnstile(token: string): Promise<boolean> {
     });
 
     const result = await response.json();
-    return result.success;
+    return result.success === true;
   } catch (error) {
-    console.error('Turnstile verification error:', error);
+    console.error('Turnstile verification error:', error instanceof Error ? error.message : String(error));
     return false;
   }
 }
 
-// ─── Send email via Brevo ───
+/* ─── Send email via Brevo ─── */
 async function sendBrevoEmail({
   to,
   replyTo,
@@ -73,11 +132,11 @@ async function sendBrevoEmail({
 
     if (response.ok) return true;
     const errorText = await response.text();
-    console.error('Brevo API error response:', response.status, errorText);
+    console.error('Brevo API error:', response.status, errorText);
     return false;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error('Brevo email timeout - request aborted after 10 seconds');
+      console.error('Brevo email timeout — aborted after 10s');
     } else {
       console.error('Brevo email error:', error instanceof Error ? error.message : String(error));
     }
@@ -85,36 +144,114 @@ async function sendBrevoEmail({
   }
 }
 
+/* ─── Validate request body ─── */
+function validateBody(body: unknown): { valid: true; data: ValidatedBody } | { valid: false; error: string } {
+  if (typeof body !== 'object' || body === null) {
+    return { valid: false, error: 'Invalid request body' };
+  }
+
+  const b = body as Record<string, unknown>;
+
+  // Required fields
+  if (typeof b.name !== 'string' || b.name.trim().length === 0) {
+    return { valid: false, error: 'Name is required' };
+  }
+  if (typeof b.email !== 'string' || b.email.trim().length === 0) {
+    return { valid: false, error: 'Email is required' };
+  }
+  if (typeof b.offer !== 'string' || b.offer.trim().length === 0) {
+    return { valid: false, error: 'Offer is required' };
+  }
+
+  // Length limits
+  if (b.name.length > MAX_NAME) return { valid: false, error: 'Name too long' };
+  if (b.email.length > MAX_EMAIL) return { valid: false, error: 'Email too long' };
+  if (b.offer.length > MAX_OFFER) return { valid: false, error: 'Offer too long' };
+
+  // Email format
+  if (!EMAIL_REGEX.test(b.email)) {
+    return { valid: false, error: 'Invalid email format' };
+  }
+
+  // Optional fields with type + length validation
+  if (b.phone != null && (typeof b.phone !== 'string' || b.phone.length > MAX_PHONE)) {
+    return { valid: false, error: 'Invalid phone' };
+  }
+  if (b.message != null && (typeof b.message !== 'string' || b.message.length > MAX_MESSAGE)) {
+    return { valid: false, error: 'Message too long' };
+  }
+  if (b.locale != null && (typeof b.locale !== 'string' || (b.locale !== 'en' && b.locale !== 'de'))) {
+    return { valid: false, error: 'Invalid locale' };
+  }
+  if (typeof b.turnstileToken !== 'string' || b.turnstileToken.length === 0) {
+    return { valid: false, error: 'Spam protection token required' };
+  }
+
+  return {
+    valid: true,
+    data: {
+      name: b.name.trim(),
+      email: b.email.trim().toLowerCase(),
+      phone: typeof b.phone === 'string' ? b.phone.trim() : '',
+      offer: b.offer.trim(),
+      message: typeof b.message === 'string' ? b.message.trim() : '',
+      locale: (b.locale === 'de' ? 'de' : 'en') as 'de' | 'en',
+      turnstileToken: b.turnstileToken,
+    },
+  };
+}
+
+interface ValidatedBody {
+  name: string;
+  email: string;
+  phone: string;
+  offer: string;
+  message: string;
+  locale: 'de' | 'en';
+  turnstileToken: string;
+}
+
+/* ─── POST handler ─── */
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, email, phone, offer, message, locale = 'en', turnstileToken } = body;
-
-    // Basic validation
-    if (!name || !email || !offer) {
+    // Rate limiting
+    maybeCleanup();
+    const clientIp = getClientIp(request);
+    const limit = checkRateLimit(clientIp);
+    if (!limit.allowed) {
       return NextResponse.json(
-        { error: 'Name, email, and offer are required' },
-        { status: 400 }
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(limit.retryAfter ?? 3600),
+          },
+        }
       );
     }
 
-    // Verify Turnstile token
-    if (!turnstileToken) {
-      return NextResponse.json(
-        { error: 'Please complete the spam protection challenge' },
-        { status: 400 }
-      );
+    // Parse + validate body
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    // Skip Turnstile verification if bypassed (for development or if Turnstile failed to load)
-    if (turnstileToken !== 'bypassed' && turnstileToken !== 'localhost-bypass') {
-      const turnstileValid = await verifyTurnstile(turnstileToken);
-      if (!turnstileValid) {
-        return NextResponse.json(
-          { error: 'Spam protection verification failed' },
-          { status: 400 }
-        );
-      }
+    const validation = validateBody(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+    const data = validation.data;
+
+    // Verify Turnstile — no bypass tokens, real verification only.
+    // In dev mode, if no secret key is set, verifyTurnstile returns true.
+    const turnstileValid = await verifyTurnstile(data.turnstileToken);
+    if (!turnstileValid) {
+      return NextResponse.json(
+        { error: 'Spam protection verification failed' },
+        { status: 400 }
+      );
     }
 
     const domainName = process.env.NEXT_PUBLIC_DOMAIN_NAME || 'yourdomain.com';
@@ -123,10 +260,22 @@ export async function POST(request: Request) {
 
     // Build the two emails
     const ownerEmailContent = buildOwnerNotificationEmail({
-      name, email, phone, offer, message, domainName, locale,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      offer: data.offer,
+      message: data.message,
+      domainName,
+      locale: data.locale,
     });
     const confirmationEmailContent = buildConfirmationEmail({
-      name, email, phone, offer, message, domainName, locale,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      offer: data.offer,
+      message: data.message,
+      domainName,
+      locale: data.locale,
     });
 
     // Send notification to domain owner
@@ -135,7 +284,7 @@ export async function POST(request: Request) {
         { email: contactEmail },
         ...(ownerEmail && ownerEmail !== contactEmail ? [{ email: ownerEmail }] : []),
       ],
-      replyTo: { email, name },
+      replyTo: { email: data.email, name: data.name },
       subject: ownerEmailContent.subject,
       html: ownerEmailContent.html,
       text: ownerEmailContent.text,
@@ -143,32 +292,27 @@ export async function POST(request: Request) {
 
     // Send confirmation to the prospect
     const confirmationSent = await sendBrevoEmail({
-      to: [{ email, name }],
+      to: [{ email: data.email, name: data.name }],
       subject: confirmationEmailContent.subject,
       html: confirmationEmailContent.html,
       text: confirmationEmailContent.text,
     });
 
-    if (!ownerEmailSent) {
-      console.log('New domain inquiry (email service not configured):', {
-        domain: domainName,
-        name,
-        email,
-        phone,
-        offer,
-        message,
-        locale,
-        confirmationSent,
-      });
-    }
+    // Log only non-PII operational data
+    console.log('Domain inquiry processed', {
+      domain: domainName,
+      locale: data.locale,
+      ownerEmailSent,
+      confirmationSent,
+      timestamp: new Date().toISOString(),
+    });
 
-    // Always return success to user (even if email failed)
     return NextResponse.json({
       success: true,
       confirmationSent,
     });
   } catch (error) {
-    console.error('Contact form error:', error);
+    console.error('Contact form error:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

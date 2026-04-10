@@ -21,7 +21,6 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileLoaded, setTurnstileLoaded] = useState(false);
   const [isLocalhost, setIsLocalhost] = useState(false);
 
   useEffect(() => {
@@ -49,9 +48,12 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
   const domainBase = domainName.split('.')[0];
   const charCount = domainBase.length;
 
+  const hasTurnstileSiteKey = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLocalhost && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && turnstileLoaded && !turnstileToken) {
+    // If a Turnstile site key is configured, require a real token from the widget.
+    if (hasTurnstileSiteKey && !turnstileToken) {
       alert(locale === 'de' ? 'Bitte den Spam-Schutz abschliessen.' : 'Please complete the spam protection challenge.');
       return;
     }
@@ -63,7 +65,8 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
         body: JSON.stringify({
           ...formData,
           locale,
-          turnstileToken: turnstileToken || (isLocalhost ? 'localhost-bypass' : 'bypassed')
+          // 'dev' is only accepted server-side when NODE_ENV=development AND no secret is configured.
+          turnstileToken: turnstileToken || 'dev',
         }),
       });
       if (response.ok) {
@@ -72,8 +75,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
         const errorData = await response.json();
         alert(errorData.error || 'Failed to send message. Please try again.');
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       alert('Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -108,7 +110,6 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
               setSubmitted(false);
               setFormData({ name: '', email: '', phone: '', offer: '', message: '' });
               setTurnstileToken(null);
-              setTurnstileLoaded(false);
             }}
             className="font-mono px-8 py-4 border border-gold/30 text-gold hover:bg-gold hover:text-noir transition-all duration-500 text-[10px] tracking-[0.3em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 animate-fade-up"
             style={{ animationDelay: '0.3s' }}
@@ -288,30 +289,29 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                 />
               </div>
 
-              {/* Turnstile */}
-              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !isLocalhost && (
+              {/* Turnstile — shown whenever a site key is configured */}
+              {hasTurnstileSiteKey && (
                 <div className="flex justify-start pt-2">
                   <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => { setTurnstileToken(token); setTurnstileLoaded(true); }}
-                    onError={() => { setTurnstileToken(null); setTurnstileLoaded(true); }}
-                    onExpire={() => { setTurnstileToken(null); }}
-                    onLoad={() => setTurnstileLoaded(true)}
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onError={() => setTurnstileToken(null)}
+                    onExpire={() => setTurnstileToken(null)}
                     options={{ theme: 'dark', size: 'normal' }}
                   />
                 </div>
               )}
 
-              {isLocalhost && (
+              {!hasTurnstileSiteKey && isLocalhost && (
                 <p className="font-mono text-[9px] text-stone-700 tracking-[0.2em] uppercase">
-                  DEV MODE — Spam protection disabled
+                  DEV MODE — Spam protection not configured
                 </p>
               )}
 
               {/* Submit button */}
               <button
                 type="submit"
-                disabled={isSubmitting || (!isLocalhost && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileLoaded && !turnstileToken)}
+                disabled={isSubmitting || (hasTurnstileSiteKey && !turnstileToken)}
                 className="group w-full relative py-5 mt-4 bg-gold text-noir font-mono text-[11px] tracking-[0.35em] uppercase overflow-hidden disabled:opacity-20 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 transition-all duration-500 hover:tracking-[0.45em] hover:bg-gold-light"
               >
                 <span className="relative z-10 inline-flex items-center gap-3">
