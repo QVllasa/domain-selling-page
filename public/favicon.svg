@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="6" fill="#2563eb"/>
-  <text x="16" y="22" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">V</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#0a0a0a"/>
+  <text x="6" y="24" font-family="'Bodoni 72','Bodoni Moda',Didot,Georgia,serif" font-size="22" font-weight="400" fill="#eeeee8">v</text>
+  <text x="20" y="24" font-family="'Bodoni 72','Bodoni Moda',Didot,Georgia,serif" font-size="22" font-style="italic" font-weight="400" fill="#c8a84e">.</text>
 </svg>
