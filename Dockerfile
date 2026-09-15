@@ -1,5 +1,5 @@
 # Base Node.js image
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 WORKDIR /app
 
 # Install dependencies
@@ -41,7 +41,7 @@ RUN mkdir -p public
 RUN npm run build
 
 # Production image
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 # Accept runtime environment variables
@@ -63,11 +63,14 @@ RUN apk add --no-cache curl
 
 # Copy built application
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
+COPY --from=builder --chown=node:node /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/messages ./messages
+
+# Run as unprivileged user (limits damage if the app is ever compromised again)
+USER node
 
 EXPOSE 3000
 

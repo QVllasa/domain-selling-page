@@ -1,3 +1,4 @@
+import {setRequestLocale} from 'next-intl/server';
 import DomainSaleClient from '@/components/DomainSaleClient';
 
 interface DomainSalePageProps {
@@ -8,6 +9,7 @@ interface DomainSalePageProps {
 
 export default async function DomainSalePage({ params }: DomainSalePageProps) {
   const { locale } = await params;
+  setRequestLocale(locale);
 
   return <DomainSaleClient locale={locale} />;
 }
