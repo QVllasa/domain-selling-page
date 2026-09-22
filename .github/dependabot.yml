@@ -1,0 +1,22 @@
+# Dependabot: wöchentliche npm-Updates, Sicherheitsupdates gebündelt.
+# Patch/Minor werden per Workflow dependabot-auto-merge.yml automatisch gemergt,
+# Major-Updates bleiben als eigener PR liegen und werden von Hand geprüft.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    groups:
+      sicherheitsupdates:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: ["patch", "minor"]
+      versionsupdates:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["patch", "minor"]
