@@ -5,9 +5,12 @@
 # Hinweis: GitHubs eingebautes Auto-Merge ist fuer private Repos im Free-Plan nicht
 # verfuegbar (enablePullRequestAutoMerge wird abgelehnt). Deshalb mergt dieser Workflow
 # direkt, nachdem der Build-Job gruen ist (needs: build).
-# Dependabot Auto-Merge: Patch- und Minor-Updates werden nach grünem CI-Build
-# automatisch per Squash gemergt. Major-Updates werden NICHT gemergt und bleiben
-# als PR zur manuellen Prüfung liegen.
+# Dependabot Auto-Merge: NUR Patch-Updates werden nach grünem CI-Build
+# automatisch per Squash gemergt. Minor- und Major-Updates werden NICHT gemergt
+# und bleiben als PR zur manuellen Prüfung liegen (Gründer-Entscheidung
+# 23.09.2026, nach Prod-Ausfall durch einen auto-gemergten Minor-Bump von
+# better-auth). Damit gruppierte PRs nicht gemischt sind, trennt
+# .github/dependabot.yml Patch- und Minor-Gruppen.
 #
 # Gate: Der Job auto-merge hängt per needs am Build-Job (ci-build.yml als
 # wiederverwendbarer Workflow). Schlägt der Build fehl, läuft auto-merge nicht.
@@ -42,10 +45,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-Merge aktivieren (nur Patch/Minor)
+      - name: Auto-Merge (nur Patch)
         if: |
-          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
-           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
+          steps.meta.outputs.update-type == 'version-update:semver-patch' &&
           !contains(steps.meta.outputs.dependency-names, 'better-auth') &&
           !contains(steps.meta.outputs.dependency-names, 'next-auth') &&
           !contains(steps.meta.outputs.dependency-names, '@auth/core') &&
@@ -67,6 +69,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
 
-      - name: Major-Update, manuelle Prüfung nötig
-        if: steps.meta.outputs.update-type == 'version-update:semver-major'
-        run: echo "::notice::Major-Update (${{ steps.meta.outputs.update-type }}), kein Auto-Merge. Bitte von Hand prüfen."
+      - name: Minor-/Major-Update, manuelle Prüfung nötig
+        if: steps.meta.outputs.update-type != 'version-update:semver-patch'
+        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}). Nur Patch-Updates werden automatisch gemergt, bitte von Hand prüfen."

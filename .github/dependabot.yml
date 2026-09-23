@@ -1,6 +1,8 @@
 # Dependabot: wöchentliche npm-Updates, Sicherheitsupdates gebündelt.
-# Patch/Minor werden per Workflow dependabot-auto-merge.yml automatisch gemergt,
-# Major-Updates bleiben als eigener PR liegen und werden von Hand geprüft.
+# NUR Patch-Updates werden per Workflow dependabot-auto-merge.yml automatisch
+# gemergt. Minor- und Major-Updates bleiben als PR liegen und werden von Hand
+# geprüft (Gründer-Entscheidung 23.09.2026, nach Prod-Ausfall durch einen
+# auto-gemergten Minor-Bump von better-auth).
 version: 2
 updates:
   - package-ecosystem: "npm"
@@ -11,12 +13,22 @@ updates:
       time: "06:00"
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 5
+    # Patch und Minor in GETRENNTEN Gruppen: Der Auto-Merge-Workflow mergt nur
+    # Patch. Ein gemischter Sammel-PR hätte update-type = minor und bliebe liegen.
     groups:
-      sicherheitsupdates:
+      sicherheitsupdates-patch:
         applies-to: security-updates
         patterns: ["*"]
-        update-types: ["patch", "minor"]
-      versionsupdates:
+        update-types: ["patch"]
+      sicherheitsupdates-minor:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: ["minor"]
+      versionsupdates-patch:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["patch", "minor"]
+        update-types: ["patch"]
+      versionsupdates-minor:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor"]
