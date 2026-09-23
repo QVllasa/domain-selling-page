@@ -1,3 +1,7 @@
+# Denylist: Pakete, die Datenbankschema oder Anmeldung besitzen, werden NIE automatisch
+# gemergt, auch nicht als Patch. Grund: Solche Updates kompilieren sauber, verlangen aber
+# oft eine Migration (Beispiel better-auth 1.7 mit neuer Spalte session.impersonatedBy).
+# Ein gruener Build kann das nicht erkennen.
 # Hinweis: GitHubs eingebautes Auto-Merge ist fuer private Repos im Free-Plan nicht
 # verfuegbar (enablePullRequestAutoMerge wird abgelehnt). Deshalb mergt dieser Workflow
 # direkt, nachdem der Build-Job gruen ist (needs: build).
@@ -39,7 +43,25 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Auto-Merge aktivieren (nur Patch/Minor)
-        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        if: |
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
+          !contains(steps.meta.outputs.dependency-names, 'better-auth') &&
+          !contains(steps.meta.outputs.dependency-names, 'next-auth') &&
+          !contains(steps.meta.outputs.dependency-names, '@auth/core') &&
+          !contains(steps.meta.outputs.dependency-names, 'drizzle-orm') &&
+          !contains(steps.meta.outputs.dependency-names, 'drizzle-kit') &&
+          !contains(steps.meta.outputs.dependency-names, 'prisma') &&
+          !contains(steps.meta.outputs.dependency-names, '@prisma/client') &&
+          !contains(steps.meta.outputs.dependency-names, 'kysely') &&
+          !contains(steps.meta.outputs.dependency-names, 'typeorm') &&
+          !contains(steps.meta.outputs.dependency-names, 'sequelize') &&
+          !contains(steps.meta.outputs.dependency-names, 'mongoose') &&
+          !contains(steps.meta.outputs.dependency-names, 'pg') &&
+          !contains(steps.meta.outputs.dependency-names, 'mysql2') &&
+          !contains(steps.meta.outputs.dependency-names, '@better-auth/') &&
+          !contains(steps.meta.outputs.dependency-names, 'payload') &&
+          !contains(steps.meta.outputs.dependency-names, 'supabase')
         run: gh pr merge --squash --delete-branch "$PR_URL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
