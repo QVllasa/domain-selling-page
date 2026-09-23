@@ -1,3 +1,6 @@
+# Hinweis: GitHubs eingebautes Auto-Merge ist fuer private Repos im Free-Plan nicht
+# verfuegbar (enablePullRequestAutoMerge wird abgelehnt). Deshalb mergt dieser Workflow
+# direkt, nachdem der Build-Job gruen ist (needs: build).
 # Dependabot Auto-Merge: Patch- und Minor-Updates werden nach grünem CI-Build
 # automatisch per Squash gemergt. Major-Updates werden NICHT gemergt und bleiben
 # als PR zur manuellen Prüfung liegen.
@@ -37,7 +40,7 @@ jobs:
 
       - name: Auto-Merge aktivieren (nur Patch/Minor)
         if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --squash --delete-branch "$PR_URL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
