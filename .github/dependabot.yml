@@ -14,6 +14,13 @@ updates:
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 5
     ignore:
+      # ESLint 10 bricht Lint: eslint-plugin-react 7.37.5 (von eslint-config-next
+      # gebündelt) ruft das in ESLint 10 entfernte context.getFilename() auf,
+      # jsx-a11y/import haben Peer <=9. Wiedervorlage: freigeben, sobald
+      # eslint-plugin-react und eslint-config-next ESLint 10 offiziell unterstützen
+      # (Stand 24.09.2026: nein; spätestens Ende Dezember 2026 erneut prüfen).
+      - dependency-name: "eslint"
+        versions: [">=10"]
       # TypeScript 7 (Go-Compiler) wird von typescript-eslint noch nicht
       # unterstützt (Peer <6.1) — Lint/Build würden brechen. Wieder freigeben,
       # sobald typescript-eslint TS 7 unterstützt (Issue #10940).
