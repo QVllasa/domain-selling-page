@@ -91,10 +91,10 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
     return (
       <div className="min-h-screen bg-noir flex items-center justify-center p-6 noise-bg relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-gold/[0.06] blur-[140px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[140px]" />
         </div>
         <div className="relative z-10 text-center max-w-md">
-          <div className="w-16 h-16 mx-auto mb-10 border border-gold/30 flex items-center justify-center animate-scale-in">
+          <div className="w-16 h-16 mx-auto mb-10 border flex items-center justify-center animate-scale-in">
             <svg className="w-8 h-8 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" className="animate-draw-check" />
             </svg>
@@ -111,7 +111,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
               setFormData({ name: '', email: '', phone: '', offer: '', message: '' });
               setTurnstileToken(null);
             }}
-            className="font-mono px-8 py-4 border border-gold/30 text-gold hover:bg-gold hover:text-noir transition-all duration-500 text-[10px] tracking-[0.3em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 animate-fade-up"
+            className="font-mono px-8 py-4 border text-gold hover:bg-gold hover:text-noir transition-all duration-500 text-[10px] tracking-[0.3em] uppercase focus-visible:[outline-width:2px] focus-visible:outline-offset-2 animate-fade-up"
             style={{ animationDelay: '0.3s' }}
           >
             ← {t('success.backButton')}
@@ -127,18 +127,18 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
 
       {/* Ambient glow — single, subtle */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[20%] left-[15%] w-[700px] h-[700px] rounded-full bg-gold/[0.04] blur-[160px]" />
-        <div className="absolute bottom-[10%] right-[20%] w-[500px] h-[500px] rounded-full bg-gold/[0.025] blur-[140px]" />
+        <div className="absolute top-[20%] left-[15%] w-[700px] h-[700px] rounded-full blur-[160px]" />
+        <div className="absolute bottom-[10%] right-[20%] w-[500px] h-[500px] rounded-full blur-[140px]" />
       </div>
 
       {/* ═══════════ TOP BAR ═══════════ */}
-      <header className="relative z-20 px-6 lg:px-12 py-6 flex items-center justify-between border-b border-white/[0.04]">
+      <header className="relative z-20 px-6 lg:px-12 py-6 flex items-center justify-between border-b border-white/4">
         <div className="flex items-center gap-4">
           <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-          <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-gold/70">
+          <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
             {locale === 'de' ? 'Zu Verkaufen' : 'For Sale'}
           </span>
-          <span className="hidden md:inline-block w-8 h-px bg-white/[0.08]" />
+          <span className="hidden md:inline-block w-8 h-px bg-white/8" />
           <span className="hidden md:inline-block font-mono text-[10px] tracking-[0.25em] uppercase text-stone-500">
             {locale === 'de' ? 'Premium Domain' : 'Premium Domain'}
           </span>
@@ -154,7 +154,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
 
           <div className="max-w-xl">
             {/* Eyebrow */}
-            <p className="font-mono text-[10px] tracking-[0.35em] uppercase text-gold/60 mb-8 animate-fade-up">
+            <p className="font-mono text-[10px] tracking-[0.35em] uppercase mb-8 animate-fade-up">
               {locale === 'de' ? 'Premium Domain · Direktverkauf' : 'Premium Domain · Direct Sale'}
             </p>
 
@@ -171,7 +171,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
             </p>
 
             {/* Price block */}
-            <div className="flex items-baseline gap-6 mb-12 pb-12 border-b border-white/[0.06] animate-fade-up" style={{ animationDelay: '0.3s' }}>
+            <div className="flex items-baseline gap-6 mb-12 pb-12 border-b border-white/6 animate-fade-up" style={{ animationDelay: '0.3s' }}>
               <div>
                 <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-stone-500 mb-2">
                   {locale === 'de' ? 'Festpreis' : 'Asking Price'}
@@ -196,7 +196,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                 { de: paymentOptions.split(',').map(p => p.trim()).join(' · '), en: paymentOptions.split(',').map(p => p.trim()).join(' · ') },
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-4 text-[13px] text-stone-400 font-light">
-                  <span className="w-6 h-px bg-gold/40 shrink-0" />
+                  <span className="w-6 h-px shrink-0" />
                   {locale === 'de' ? item.de : item.en}
                 </li>
               ))}
@@ -205,12 +205,12 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
         </div>
 
         {/* ─── RIGHT: Contact Form ─── */}
-        <div className="relative bg-white/[0.012] backdrop-blur-sm lg:border-l border-t lg:border-t-0 border-white/[0.06] px-6 sm:px-10 lg:px-14 xl:px-20 py-12 lg:py-16 flex flex-col justify-center">
+        <div className="relative bg-white/[0.012] backdrop-blur-xs lg:border-l border-t lg:border-t-0 border-white/6 px-6 sm:px-10 lg:px-14 xl:px-20 py-12 lg:py-16 flex flex-col justify-center">
 
           <div className="max-w-md w-full mx-auto lg:mx-0">
             {/* Form header */}
             <div className="mb-10 animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              <p className="font-mono text-[10px] tracking-[0.35em] uppercase text-gold/60 mb-3">
+              <p className="font-mono text-[10px] tracking-[0.35em] uppercase mb-3">
                 {locale === 'de' ? 'Kontakt aufnehmen' : 'Get in Touch'}
               </p>
               <h2 className="font-display text-[clamp(1.75rem,3vw,2.5rem)] font-normal text-cream tracking-[-0.02em] mb-3">
@@ -285,7 +285,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
                   onChange={handleChange}
                   placeholder={t('contact.form.messagePlaceholder')}
                   rows={3}
-                  className="w-full bg-transparent border-b border-white/[0.08] hover:border-white/[0.15] focus:border-transparent px-0 py-3 text-cream placeholder:text-stone-700 outline-none transition-all duration-500 text-[15px] font-light resize-none"
+                  className="w-full bg-transparent border-b border-white/8 hover:border-white/15 focus:border-transparent px-0 py-3 text-cream placeholder:text-stone-700 outline-hidden transition-all duration-500 text-[15px] font-light resize-none"
                 />
               </div>
 
@@ -312,11 +312,11 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
               <button
                 type="submit"
                 disabled={isSubmitting || (hasTurnstileSiteKey && !turnstileToken)}
-                className="group w-full relative py-5 mt-4 bg-gold text-noir font-mono text-[11px] tracking-[0.35em] uppercase overflow-hidden disabled:opacity-20 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/60 transition-all duration-500 hover:tracking-[0.45em] hover:bg-gold-light"
+                className="group w-full relative py-5 bg-gold text-noir font-mono text-[11px] tracking-[0.35em] uppercase overflow-hidden disabled:opacity-20 disabled:cursor-not-allowed focus-visible:[outline-width:2px] focus-visible:outline-offset-2 transition-all duration-500 hover:tracking-[0.45em] hover:bg-gold-light"
               >
                 <span className="relative z-10 inline-flex items-center gap-3">
                   {isSubmitting && (
-                    <span className="inline-block w-3 h-3 border-[1.5px] border-noir/30 border-t-noir rounded-full animate-spin" />
+                    <span className="inline-block w-3 h-3 border-[1.5px] border-t-noir rounded-full animate-spin" />
                   )}
                   {isSubmitting ? t('contact.form.submitting') : t('contact.form.submit')}
                   <span className="ml-1 transition-transform duration-500 group-hover:translate-x-1">→</span>
@@ -334,7 +334,7 @@ export default function DomainSaleClient({ locale }: DomainSaleClientProps) {
       </main>
 
       {/* ═══════════ FOOTER ═══════════ */}
-      <footer className="relative z-10 px-6 lg:px-12 py-5 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="relative z-10 px-6 lg:px-12 py-5 border-t border-white/4 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-stone-700">
           © {new Date().getFullYear()} ⋅ {domainName}
         </p>
@@ -377,7 +377,7 @@ function FormField({
   return (
     <div className="bid-field group">
       <label htmlFor={id} className="block font-mono text-[10px] tracking-[0.25em] uppercase text-stone-500 group-focus-within:text-gold transition-colors duration-500 mb-3">
-        {label} {required && <span className="text-gold/60">*</span>}
+        {label} {required && <span>*</span>}
       </label>
       <input
         id={id}
@@ -387,7 +387,7 @@ function FormField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`w-full bg-transparent border-b border-white/[0.08] hover:border-white/[0.15] focus:border-transparent px-0 py-3 text-cream placeholder:text-stone-700 outline-none transition-all duration-500 ${highlight ? 'font-display text-2xl' : 'text-[15px] font-light'}`}
+        className={`w-full bg-transparent border-b border-white/8 hover:border-white/15 focus:border-transparent px-0 py-3 text-cream placeholder:text-stone-700 outline-hidden transition-all duration-500 ${highlight ? 'font-display text-2xl' : 'text-[15px] font-light'}`}
       />
     </div>
   );
