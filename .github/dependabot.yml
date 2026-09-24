@@ -13,6 +13,15 @@ updates:
       time: "06:00"
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 5
+    ignore:
+      # TypeScript 7 (Go-Compiler) wird von typescript-eslint noch nicht
+      # unterstützt (Peer <6.1) — Lint/Build würden brechen. Wieder freigeben,
+      # sobald typescript-eslint TS 7 unterstützt (Issue #10940).
+      - dependency-name: "typescript"
+        versions: [">=7"]
+      # @types/node an die Node-Laufzeit koppeln (max. Node 22 in den Images).
+      - dependency-name: "@types/node"
+        versions: [">=23"]
     # Patch und Minor in GETRENNTEN Gruppen: Der Auto-Merge-Workflow mergt nur
     # Patch. Ein gemischter Sammel-PR hätte update-type = minor und bliebe liegen.
     groups:
