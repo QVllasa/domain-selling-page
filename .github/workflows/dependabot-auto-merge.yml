@@ -45,9 +45,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-Merge (nur Patch)
+      - name: Auto-Merge (Patch und Minor)
         if: |
-          steps.meta.outputs.update-type == 'version-update:semver-patch' &&
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
           !contains(steps.meta.outputs.dependency-names, 'better-auth') &&
           !contains(steps.meta.outputs.dependency-names, 'next-auth') &&
           !contains(steps.meta.outputs.dependency-names, '@auth/core') &&
@@ -69,6 +70,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
 
-      - name: Minor-/Major-Update, manuelle Prüfung nötig
-        if: steps.meta.outputs.update-type != 'version-update:semver-patch'
-        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}). Nur Patch-Updates werden automatisch gemergt, bitte von Hand prüfen."
+      - name: Major-Update, manuelle Prüfung nötig
+        if: |
+          steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+          steps.meta.outputs.update-type != 'version-update:semver-minor'
+        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}). Nur Patch- und Minor-Updates werden automatisch gemergt, bitte von Hand prüfen."
