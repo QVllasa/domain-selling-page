@@ -1,3 +1,10 @@
+# AKTUELLE REGEL (Gruenderentscheidung 25.09.2026): Patch UND Minor werden nach
+# gruenem Build automatisch gemergt. Das loest die Einschraenkung "nur Patch" vom
+# 23.09.2026 ab, die nach einem Prod-Ausfall durch einen auto-gemergten
+# Minor-Bump von better-auth eingefuehrt worden war. Schutz bleibt die Sperrliste
+# weiter unten plus der Build- und Test-Gate. Aeltere Kommentare in dieser Datei
+# koennen dem widersprechen, diese Zeilen sind der Stand. Nicht ohne Ruecksprache
+# mit dem Gruender aendern.
 # Denylist: Pakete, die Datenbankschema oder Anmeldung besitzen, werden NIE automatisch
 # gemergt, auch nicht als Patch. Grund: Solche Updates kompilieren sauber, verlangen aber
 # oft eine Migration (Beispiel better-auth 1.7 mit neuer Spalte session.impersonatedBy).
@@ -45,9 +52,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-Merge (nur Patch)
+      - name: Auto-Merge (Patch und Minor)
         if: |
-          steps.meta.outputs.update-type == 'version-update:semver-patch' &&
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
           !contains(steps.meta.outputs.dependency-names, 'better-auth') &&
           !contains(steps.meta.outputs.dependency-names, 'next-auth') &&
           !contains(steps.meta.outputs.dependency-names, '@auth/core') &&
@@ -69,6 +77,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
 
-      - name: Minor-/Major-Update, manuelle Prüfung nötig
-        if: steps.meta.outputs.update-type != 'version-update:semver-patch'
-        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}). Nur Patch-Updates werden automatisch gemergt, bitte von Hand prüfen."
+      - name: Major-Update, manuelle Prüfung nötig
+        if: |
+          steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+          steps.meta.outputs.update-type != 'version-update:semver-minor'
+        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}). Nur Patch- und Minor-Updates werden automatisch gemergt, bitte von Hand prüfen."
