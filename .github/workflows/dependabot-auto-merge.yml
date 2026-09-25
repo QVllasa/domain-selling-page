@@ -52,26 +52,44 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Sperrliste exakt pro Paketname pruefen. dependency-names ist ein
+      # kommagetrennter String; contains() wuerde Teilstrings matchen ("pg"
+      # blockierte so auch "@types/pg"). Hier wird jeder Name einzeln exakt
+      # verglichen. Praefixregeln gelten nur fuer ganze Scopes (@better-auth/,
+      # @prisma/, @payloadcms/, @supabase/), die vorher per Teilstring mit
+      # abgedeckt waren.
+      - name: Sperrliste exakt pruefen
+        id: deny
+        env:
+          DEPS: ${{ steps.meta.outputs.dependency-names }}
+        run: |
+          set -euo pipefail
+          exact="better-auth next-auth @auth/core drizzle-orm drizzle-kit prisma @prisma/client kysely typeorm sequelize mongoose pg mysql2 payload supabase"
+          prefixes="@better-auth/ @prisma/ @payloadcms/ @supabase/"
+          blocked=false
+          hit=""
+          IFS=',' read -ra names <<< "$DEPS"
+          for raw in ${names[@]+"${names[@]}"}; do
+            name="${raw#"${raw%%[![:space:]]*}"}"
+            name="${name%"${name##*[![:space:]]}"}"
+            [ -z "$name" ] && continue
+            for d in $exact; do
+              if [ "$name" = "$d" ]; then blocked=true; hit="$hit $name"; fi
+            done
+            for p in $prefixes; do
+              case "$name" in "$p"*) blocked=true; hit="$hit $name" ;; esac
+            done
+          done
+          if [ "$blocked" = true ]; then
+            echo "::notice::Kein Auto-Merge, Paket auf der Sperrliste:$hit"
+          fi
+          echo "blocked=$blocked" >> "$GITHUB_OUTPUT"
+
       - name: Auto-Merge (Patch und Minor)
         if: |
+          steps.deny.outputs.blocked != 'true' &&
           (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
-           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
-          !contains(steps.meta.outputs.dependency-names, 'better-auth') &&
-          !contains(steps.meta.outputs.dependency-names, 'next-auth') &&
-          !contains(steps.meta.outputs.dependency-names, '@auth/core') &&
-          !contains(steps.meta.outputs.dependency-names, 'drizzle-orm') &&
-          !contains(steps.meta.outputs.dependency-names, 'drizzle-kit') &&
-          !contains(steps.meta.outputs.dependency-names, 'prisma') &&
-          !contains(steps.meta.outputs.dependency-names, '@prisma/client') &&
-          !contains(steps.meta.outputs.dependency-names, 'kysely') &&
-          !contains(steps.meta.outputs.dependency-names, 'typeorm') &&
-          !contains(steps.meta.outputs.dependency-names, 'sequelize') &&
-          !contains(steps.meta.outputs.dependency-names, 'mongoose') &&
-          !contains(steps.meta.outputs.dependency-names, 'pg') &&
-          !contains(steps.meta.outputs.dependency-names, 'mysql2') &&
-          !contains(steps.meta.outputs.dependency-names, '@better-auth/') &&
-          !contains(steps.meta.outputs.dependency-names, 'payload') &&
-          !contains(steps.meta.outputs.dependency-names, 'supabase')
+           steps.meta.outputs.update-type == 'version-update:semver-minor')
         run: gh pr merge --squash --delete-branch "$PR_URL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
