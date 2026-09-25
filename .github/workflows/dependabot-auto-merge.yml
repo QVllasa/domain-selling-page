@@ -1,11 +1,15 @@
-# AKTUELLE REGEL (Gruenderentscheidung 25.09.2026 abends): NUR Patch-Updates werden
-# nach gruenem Build automatisch gemergt. Minor- und Major-Updates bleiben als PR
-# liegen und werden in der monatlichen Runde von Hand geprueft. Grund: Minor-Updates
-# brechen eher zur Laufzeit (Beispiel better-auth 1.7: Build gruen, Prod HTTP 500);
-# das erkennt weder der Build noch der Claude-Dependabot-Fix (der greift nur bei
-# rotem Build). Die Sperrliste gilt zusaetzlich. Aeltere Kommentare in dieser Datei
-# koennen dem widersprechen, diese Zeilen sind der Stand. Nicht ohne Ruecksprache
-# mit dem Gruender aendern.
+# AKTUELLE REGEL (Gruenderentscheidung 25.09.2026 abends): Automatisch gemergt
+# (nach gruenem Build, Sperrliste gilt immer) werden
+#   - SICHERHEITS-Updates als Patch UND Minor (Dependabot-Gruppen
+#     sicherheitsupdates-*), damit Sicherheitsluecken sofort im Hintergrund
+#     geschlossen werden,
+#   - normale Versions-Updates NUR als Patch.
+# Minor-Versions-Updates und alle Majors bleiben als PR liegen und werden
+# monatlich von Hand geprueft. Grund: Minor-Updates brechen eher zur Laufzeit
+# (better-auth 1.7: Build gruen, Prod HTTP 500); das erkennt weder der Build
+# noch der Claude-Dependabot-Fix (der greift nur bei rotem Build). Aeltere
+# Kommentare in dieser Datei koennen dem widersprechen, diese Zeilen sind der
+# Stand. Nicht ohne Ruecksprache mit dem Gruender aendern.
 # Denylist: Pakete, die Datenbankschema oder Anmeldung besitzen, werden NIE automatisch
 # gemergt, auch nicht als Patch. Grund: Solche Updates kompilieren sauber, verlangen aber
 # oft eine Migration (Beispiel better-auth 1.7 mit neuer Spalte session.impersonatedBy).
@@ -86,10 +90,12 @@ jobs:
           fi
           echo "blocked=$blocked" >> "$GITHUB_OUTPUT"
 
-      - name: Auto-Merge (nur Patch)
+      - name: Auto-Merge (Patch + Sicherheits-Minor)
         if: |
           steps.deny.outputs.blocked != 'true' &&
-          steps.meta.outputs.update-type == 'version-update:semver-patch'
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           (steps.meta.outputs.update-type == 'version-update:semver-minor' &&
+            startsWith(steps.meta.outputs.dependency-group, 'sicherheitsupdates')))
         run: gh pr merge --squash --delete-branch "$PR_URL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -97,5 +103,7 @@ jobs:
 
       - name: Minor-/Major-Update, manuelle Prüfung nötig
         if: |
-          steps.meta.outputs.update-type != 'version-update:semver-patch'
-        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}). Nur Patch-Updates werden automatisch gemergt, bitte von Hand prüfen."
+          steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+          !(steps.meta.outputs.update-type == 'version-update:semver-minor' &&
+            startsWith(steps.meta.outputs.dependency-group, 'sicherheitsupdates'))
+        run: echo "::notice::Kein Auto-Merge (${{ steps.meta.outputs.update-type }}, Gruppe ${{ steps.meta.outputs.dependency-group }}). Automatisch gemergt werden nur Patches und Sicherheits-Minors, bitte von Hand prüfen."
